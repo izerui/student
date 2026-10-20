@@ -1,0 +1,8 @@
+[project]
+name = "student-tools"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "networkx>=3.7",
+    "pillow>=12.3.0",
+]

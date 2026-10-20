@@ -1,0 +1,506 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "knowledge-map-web/knowledge.schema.json",
+  "title": "知识大厦全景网页的输入数据",
+  "description": "每个字段对应页面上的一个位置，见 SKILL.md 第一节。结构以外的规则（编号唯一、引用存在、依赖不往高层指、无环）由 lib/normalize.js 检查（tools/build.mjs 生成时、网页打开时都会检查）。",
+  "type": "object",
+  "required": [
+    "title",
+    "layers",
+    "regions",
+    "nodes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "① 顶栏标题、浏览器标题"
+    },
+    "idPattern": {
+      "type": "string",
+      "default": "\\d+\\.\\d{1,2}",
+      "description": "编号的正则；正文里“（编号）”按它识别成链接"
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "小学",
+        "初中",
+        "高中",
+        "大学"
+      ],
+      "description": "⑫ 进度按哪些学段统计"
+    },
+    "storageKey": {
+      "type": "string",
+      "description": "浏览器里保存“已学”的键名，默认 kmap-<title>"
+    },
+    "featured": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "搜索框为空时推荐的知识编号"
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "description": "④ 楼层，L=0 在最底下",
+      "items": {
+        "type": "object",
+        "required": [
+          "L",
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "L": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "楼层号，越大越高"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "楼层名：左侧楼层标签、说明栏眉题"
+          },
+          "sub": {
+            "type": "string",
+            "description": "楼层的一句说明（页面暂不显示）"
+          }
+        }
+      }
+    },
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "description": "③ 区域：同一楼层里的分块，按从左到右排",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "区域名：图例、说明栏标签"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "区域色：卡片圆点、图例"
+          },
+          "desc": {
+            "type": "string",
+            "description": "一句说明（页面暂不显示）"
+          },
+          "anchor": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "在楼层里大致靠左（0）还是靠右（1）"
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "⑤ 知识卡片",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "layer",
+          "region",
+          "what"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "唯一编号，符合 idPattern；说明栏眉题"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "卡片短名，尽量 ≤ 8 个字"
+          },
+          "full": {
+            "type": "string",
+            "description": "⑧ 说明栏标题，默认同 name"
+          },
+          "one": {
+            "type": "string",
+            "description": "⑤ 卡片第二行、⑦ 悬停提示：标志公式或定理（≤ 24 字），看一眼就知道是什么；没有公式的写一句定义"
+          },
+          "stage": {
+            "type": "string",
+            "description": "学段：悬停提示、说明栏眉题、进度统计"
+          },
+          "layer": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "所在楼层的 L"
+          },
+          "region": {
+            "type": "string",
+            "description": "所在区域的 name"
+          },
+          "what": {
+            "type": "string",
+            "minLength": 1,
+            "description": "⑧ 它是什么"
+          },
+          "from": {
+            "type": "string",
+            "description": "⑧ 从哪来（正文）"
+          },
+          "next": {
+            "type": "string",
+            "description": "⑧ 后来发展到（正文）"
+          },
+          "use": {
+            "type": "string",
+            "description": "⑧ 用在哪"
+          },
+          "eg": {
+            "type": "string",
+            "description": "⑧ 例子"
+          },
+          "upto": {
+            "type": "string",
+            "description": "⑧ 再往上：将来怎样严格化、推广（不算依赖，不画线）"
+          },
+          "deps": {
+            "type": "array",
+            "description": "⑥ 线：它直接用到的知识（来源 → 本知识）",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "简写：只写来源编号，kind 按“用到”"
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "来源知识的编号，须在同层或更低层"
+                    },
+                    "kind": {
+                      "enum": [
+                        "推出",
+                        "前提",
+                        "用到",
+                        "推广",
+                        "特例",
+                        "对照"
+                      ],
+                      "default": "用到",
+                      "description": "推出＝由来源的结论推出；前提＝来源是本知识成立的前提条件；用到＝定义或研究时用到；推广/特例；对照＝同一对象的两种看法"
+                    },
+                    "how": {
+                      "type": "string",
+                      "description": "这一步怎么来的，≤ 15 个字：悬停提示、说明栏列表、主干字幕"
+                    },
+                    "method": {
+                      "type": "string",
+                      "description": "这一步用的方法/工具名，如 配方；说明栏列表里显示为【方法】，最好与 methods[].name 一致"
+                    },
+                    "condition": {
+                      "type": "string",
+                      "description": "这一步要加的条件，说明栏列表里显示为〔条件〕"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "这一步的详细说明（线上较长的文字），显示在说明栏列表的下一行"
+                    },
+                    "main": {
+                      "type": "boolean",
+                      "description": "是否主干线：全景里画得更粗更深"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "type": {
+            "enum": [
+              "起点",
+              "结论",
+              "中间步"
+            ],
+            "description": "⑤ 卡片圆点形状（■ 起点 ● 结论 ○ 中间步）、说明栏标签：起点＝直接承认或定义；结论＝推出的结果；中间步＝为推出结论而经过的一步"
+          },
+          "importance": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "重要程度，显示为 ★ 个数：悬停提示、说明栏标题"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "⑧ 说明栏标签，如 【公理】【定义】【定理】【工具】；也参与搜索"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "成立条件（如 Δ≥0、a>0）：卡片右端琥珀色 ◆、悬停提示、说明栏“成立条件”"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "⑧ 它是什么下面的要点：公式、结论条文，每条一行"
+          },
+          "counterexamples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "⑧ 反例与易错，每条一行，页面前面加 ✗"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "⑧ 注释：同源、互逆、对照、与其他资料的接口等，每条一行"
+          },
+          "group": {
+            "type": "string",
+            "description": "所属分组的 id（见 groups）：⑤ 卡片第一行显示“分组名 ›”前缀，图上同一分组的卡片排在一起、外面画框；同一分组的知识必须在同一层"
+          }
+        }
+      }
+    },
+    "chains": {
+      "type": "array",
+      "description": "② 主干：顶部按钮，可逐步播放",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "description": "从底层往上的编号序列，相邻两步之间应有依赖"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 2
+            },
+            "description": "多条支路；播放只走第一条"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "path"
+            ]
+          },
+          {
+            "required": [
+              "paths"
+            ]
+          }
+        ]
+      }
+    },
+    "methods": {
+      "type": "array",
+      "description": "方法/工具/思想方法：贯穿多个知识。② 第二行“方法”按钮，悬停高亮、点击固定并列出知识；⑧ 说明栏“用到的方法”",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "nodes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "desc": {
+            "type": "string",
+            "description": "它是什么、什么时候用"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "用到它的知识编号"
+          },
+          "labels": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "线上标签：属于这类方法的具体做法名"
+          },
+          "direction": {
+            "type": "string",
+            "description": "方向：这类方法往哪走、用来做什么"
+          },
+          "basis": {
+            "type": "string",
+            "description": "依据：凭什么能这么做（正文里可用编号引用节点）"
+          },
+          "signal": {
+            "type": "string",
+            "description": "信号：什么问题特征时想到用这个方法"
+          },
+          "examples": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "范例：具体怎么用（每条可引用节点）"
+          },
+          "pitfalls": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "易错：常见陷阱"
+          }
+        }
+      }
+    },
+    "toolbox": {
+      "type": "array",
+      "description": "工具箱：外借的公式/工具，不在主图里但被主图的知识引用",
+      "items": {
+        "type": "object",
+        "required": ["name", "usedBy"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "description": "工具名" },
+          "formula": { "type": "string", "description": "公式（LaTeX）" },
+          "source": { "type": "string", "description": "来源（别的学科、章节）" },
+          "usedBy": { "type": "array", "items": { "type": "string" }, "description": "用到它的知识编号" },
+          "notes": { "type": "string", "description": "用法说明" }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "description": "题型入口：看到什么题型→用哪个工具/走哪个方向",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "targets"],
+        "additionalProperties": false,
+        "properties": {
+          "pattern": { "type": "string", "minLength": 1, "description": "看到的题型/问题特征" },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["case", "nodes"],
+              "additionalProperties": false,
+              "properties": {
+                "case": { "type": "string", "description": "具体分类" },
+                "nodes": { "type": "array", "items": { "type": "string" }, "description": "对应的知识编号" },
+                "hint": { "type": "string", "description": "简短提示" }
+              }
+            }
+          },
+          "tags": { "type": "array", "items": { "type": "string" }, "description": "搜索分组标签" }
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "description": "分组：把同一类的几个知识点归在一起（如“导数的应用”里的单调性、极值、最值）。图上画成框，框上写分组名，点框名看分组的整体讲解和整个分组的家谱",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "分组编号，不能和知识重名；正文里写“（编号）”也能链接到分组"
+          },
+          "name": {
+            "type": "string",
+            "description": "分组名：框上的标题、卡片前缀"
+          },
+          "full": {
+            "type": "string",
+            "description": "分组说明栏的标题，默认同 name"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "one": {
+            "type": "string",
+            "description": "一句话，悬停在框名上时显示"
+          },
+          "what": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "next": {
+            "type": "string"
+          },
+          "use": {
+            "type": "string"
+          },
+          "eg": {
+            "type": "string"
+          },
+          "upto": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "让 node 把 lib/*.js 当作 ES 模块读；没有依赖，不用 npm install。"
+}

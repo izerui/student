@@ -1,0 +1,7 @@
+# Python 环境（由 uv sync --frozen 在 runtime/ 下重建，不入库）
+runtime/.venv/
+**/__pycache__/
+**/*.pyc
+
+# ManimCE 渲染中间产物
+media/

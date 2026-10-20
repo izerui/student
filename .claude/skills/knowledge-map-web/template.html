@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>知识大厦</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect x=%226%22 y=%224%22 width=%2220%22 height=%2224%22 rx=%223%22 fill=%22%231A2433%22/%3E%3Crect x=%2210%22 y=%228%22 width=%2212%22 height=%223%22 fill=%22%23E9AA4C%22/%3E%3Crect x=%2210%22 y=%2214%22 width=%2212%22 height=%223%22 fill=%22%235DBBBE%22/%3E%3C/svg%3E">
+<style>
+  :root {
+    --paper: #F2F4F7; --ink: #1A2433; --muted: #6A7889; --line: #D5DCE5;
+    --src: #C77700; --src-bg: #FFF2DC; --src-bd: #E9AA4C;
+    --dst: #0F7F86; --dst-bg: #E0F3F2; --dst-bd: #5DBBBE;
+    --ease: cubic-bezier(.65, 0, .35, 1);
+    --display: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
+    --body: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    --mono: "SF Mono", "Menlo", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--body); overflow: hidden; }
+  button { font-family: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--dst); outline-offset: 2px; }
+  kbd { font: 10px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; background: #fff; }
+
+  header { position: fixed; top: 0; left: 0; right: 0; height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 22px; background: rgba(242,244,247,.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); z-index: 10; }
+  header h1 { margin: 0; font: 700 23px var(--display); letter-spacing: 6px; cursor: pointer; white-space: nowrap; }
+  header .tag { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  header .tag em { font-style: normal; color: var(--src); font-weight: 600; } header .tag i { font-style: normal; color: var(--dst); font-weight: 600; }
+  .grow { flex: 1; }
+  .tbtn { height: 34px; padding: 0 13px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 13px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; transition: border-color .2s, background .2s; }
+  .tbtn:hover { border-color: var(--ink); }
+  .tbtn.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  #bSearch { width: 230px; color: var(--muted); justify-content: space-between; }
+
+  #bar { position: fixed; top: 56px; left: 0; right: 0; height: 46px; display: flex; align-items: center; gap: 6px; padding: 0 22px; z-index: 9; white-space: nowrap; overflow-x: auto; pointer-events: none; }
+  #bar > * { pointer-events: auto; }
+  #bar .lead { font-size: 12px; color: var(--muted); background: rgba(242,244,247,.9); padding: 3px 6px; border-radius: 6px; }
+  .chip { height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 12.5px; cursor: pointer; transition: border-color .2s, background .2s, transform .2s; }
+  .chip:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .chip.back { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .chip.now { border-color: var(--ink); font-weight: 700; }
+  .chip .play { font-size: 9px; margin-right: 5px; color: var(--src); }
+  #bar .sep { color: #A9B4C2; font-size: 12px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 2px; margin-right: 4px; }
+  .seg button { height: 24px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: var(--ink); color: #fff; }
+  #legend { position: fixed; left: 18px; bottom: 18px; z-index: 5; display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: 520px; font-size: 12px; color: var(--muted); padding: 5px 10px; background: rgba(242,244,247,.9); border-radius: 8px; transition: opacity .3s; }
+  #legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+
+  #cv { position: fixed; top: 56px; left: 0; display: block; touch-action: none; cursor: grab; }
+  #cv.grabbing { cursor: grabbing; } #cv.point { cursor: pointer; }
+  #formulaLayer { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+  .canvas-formula { position: absolute; left: 0; top: 0; color: var(--muted); white-space: nowrap; transform-origin: 0 0; will-change: transform, opacity; }
+  .canvas-formula .katex { font-size: 12px; line-height: 1; }
+  .canvas-formula .katex-display { margin: 0; text-align: left; }
+
+  #mini { position: fixed; right: 64px; bottom: 18px; width: 180px; height: 120px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.85); backdrop-filter: blur(4px); z-index: 5; cursor: crosshair; }
+  #zoom { position: fixed; right: 18px; bottom: 18px; z-index: 6; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; box-shadow: 0 4px 14px rgba(26,36,51,.08); }
+  #zoom button { width: 34px; height: 34px; border: 0; background: #fff; font-size: 17px; cursor: pointer; color: var(--ink); }
+  #zoom button + button { border-top: 1px solid var(--line); }
+  #zoom button:hover { background: var(--paper); }
+  #help { position: fixed; right: 256px; bottom: 18px; text-align: right; font-size: 11.5px; color: var(--muted); z-index: 5; line-height: 1.8; background: rgba(242,244,247,.85); padding: 2px 8px; border-radius: 8px; }
+  #help kbd { margin: 0 2px; }
+  #mini, #help { transition: opacity .4s; }
+  #mini.hide, #help.gone { opacity: 0; pointer-events: none; }
+
+  #tip { position: fixed; z-index: 20; pointer-events: none; max-width: min(620px, calc(100vw - 40px)); background: var(--ink); color: #fff; font-size: 13px; line-height: 1.7; border-radius: 14px; opacity: 0; transition: opacity .15s; box-shadow: 0 10px 28px rgba(26,36,51,.25); overflow: visible; }
+  #tip.show { pointer-events: auto; opacity: 1; }
+  #tip .tip-inner { padding: 18px 24px; max-height: calc(100vh - 80px); overflow-y: auto; border-radius: 14px; }
+  #tip::after { content: ""; position: absolute; width: 14px; height: 14px; background: var(--ink); transform: rotate(45deg); pointer-events: none; }
+  #tip.arrow-left::after { left: -7px; top: var(--arrow-y, 24px); }
+  #tip.arrow-right::after { right: -7px; top: var(--arrow-y, 24px); }
+  #tip.arrow-top::after { top: -7px; left: 40px; }
+  #tip:not(.arrow-left):not(.arrow-right):not(.arrow-top)::after { display: none; }
+  #tip.show h3 { color: #B8C3D1; font-size: 11px; letter-spacing: 2px; font-weight: 600; margin: 14px 0 6px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.15); }
+  #tip.show p { font-size: 13px; line-height: 1.7; margin: 4px 0; }
+  #tip.show .proof { margin: 6px 0 2px; }
+  #tip.show .proof-step { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; line-height: 1.8; }
+  #tip.show .proof-step:last-child { border-bottom: none; }
+  #tip.show .proof-step .sn { width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; background: rgba(255,255,255,.15); color: #B8C3D1; font: 600 11px var(--mono); flex: none; }
+  #tip.show .proof-step .katex { font-size: 1.05em; white-space: nowrap; }
+  #tip.show .dep-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.12); }
+  #tip.show .dep-block:first-child { margin-top: 4px; padding-top: 0; border-top: none; }
+  #tip.show .dep-flow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+  #tip.show .dep-flow .lk { font-size: 12px; font-weight: 600; padding: 2px 8px; }
+  #tip.show .dep-flow .arrow { color: #5DBBBE; font-size: 14px; }
+  #tip.show .dep-src { font-size: 12px; color: #B8C3D1; margin-bottom: 4px; }
+  #tip.show .tip-cond { color: #FFD08A; font-size: 12px; margin: 5px 0; padding: 4px 8px; background: rgba(255,208,138,.08); border-radius: 4px; }
+  #tip.show .tip-method { color: #5DBBBE; font-weight: 700; font-size: 13px; margin: 5px 0; }
+  #tip.show .route { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; font-size: 12px; margin: 4px 0; }
+  #tip.show .route .ar { color: #FFD08A; }
+  #tip.show .route .here { background: #fff; color: var(--ink); border-radius: 4px; padding: 0 5px; font-size: 11px; font-weight: 600; }
+  #tip.show .lk { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,.15); cursor: pointer; color: #fff; margin: 1px 0; }
+  #tip.show .lk:hover { background: rgba(255,255,255,.3); }
+  #tip.show .hero-formula { margin: 8px 0; padding: 12px 16px; background: rgba(255,255,255,.14); border-left: 3px solid #5DBBBE; border-radius: 0 8px 8px 0; font-size: 15px; }
+  #tip.show .hero-formula .katex { font-size: 1.1em; white-space: nowrap; }
+  #tip.show .kd { font-size: 10px; padding: 0 4px; border-radius: 3px; background: rgba(255,255,255,.15); }
+  #tip.show .md { color: #5DBBBE; font-size: 12px; font-weight: 600; }
+  #tip.show { opacity: 1; transform: none; }
+  #tip small { color: #B8C3D1; display: block; margin: 2px 0; }
+  #tip .rel { color: #FFD08A; display: block; margin-top: 4px; }
+
+  #caption { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); width: min(620px, calc(100vw - 32px)); max-height: calc(100vh - 100px); display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 40px rgba(26,36,51,.16); padding: 0; z-index: 12; opacity: 0; pointer-events: none; transition: opacity .3s, transform .4s var(--ease); }
+  #caption.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  #caption .top { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); padding: 14px 18px 0; flex: none; }
+  #caption .dots { display: flex; gap: 5px; }
+  #caption .dots i { width: 22px; height: 4px; border-radius: 2px; background: var(--line); transition: background .3s; }
+  #caption .dots i.on { background: var(--src-bd); }
+  #caption .txt { margin: 8px 0 0; font-size: 15px; line-height: 1.7; min-height: 32px; overflow-y: auto; padding: 0 18px; }
+  #caption .txt b { font-family: var(--display); font-size: 18px; }
+  #caption .txt .ar { color: var(--src); margin: 0 6px; }
+  #caption .ctrl { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 18px 12px; flex: none; }
+  #caption .ctrl button { height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 12.5px; }
+  #caption .ctrl button:hover:not(:disabled) { border-color: var(--ink); }
+  #caption .ctrl button:disabled { opacity: .4; cursor: default; }
+  #caption .ctrl .main { margin-left: auto; background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+  @media (max-width: 900px) {
+    }
+
+  #palette { position: fixed; inset: 0; background: rgba(26,36,51,.28); backdrop-filter: blur(2px); z-index: 30; display: none; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+  #palette.show { display: flex; animation: fade .2s; }
+  @keyframes fade { from { opacity: 0; } }
+  #palette .box { width: min(560px, calc(100vw - 24px)); background: #fff; border-radius: 16px; box-shadow: 0 30px 80px rgba(26,36,51,.3); overflow: hidden; animation: pop .25s var(--ease); }
+  @keyframes pop { from { transform: translateY(-8px) scale(.98); opacity: 0; } }
+  #palette input { width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 18px 20px; font: 17px var(--body); outline: none; color: var(--ink); }
+  #palette .res { max-height: 52vh; overflow-y: auto; padding: 6px; }
+  #palette .it { display: grid; grid-template-columns: 42px 1fr auto; gap: 2px 10px; align-items: baseline; padding: 9px 12px; border-radius: 10px; cursor: pointer; }
+  #palette .it.act { background: var(--paper); }
+  #palette .it .id { font: 11px var(--mono); color: var(--muted); }
+  #palette .it b { font-size: 14px; }
+  #palette .it small { grid-column: 2 / 4; font-size: 12px; color: var(--muted); }
+  .fm-script { font-family: var(--body); font-size: .76em; line-height: 0; }
+  sup.fm-script { vertical-align: .55em; }
+  sub.fm-script { vertical-align: -.18em; }
+
+
+  #palette .it i { font-style: normal; font-size: 11px; }
+  #palette .head { font-size: 11px; color: var(--muted); letter-spacing: 2px; padding: 8px 12px 4px; }
+  #palette .foot { border-top: 1px solid var(--line); padding: 8px 14px; font-size: 11px; color: var(--muted); display: flex; gap: 14px; }
+
+  .splash { position: fixed; inset: 0; overflow-y: auto; padding: 12vh 40px 40px; background: var(--paper); }
+  .splash h2 { font: 700 26px var(--display); margin: 0 0 10px; }
+  .splash p { font: 15px var(--body); margin: 0 0 14px; }
+  .splash ul { font: 13px/1.8 var(--mono); color: #B23B3B; max-width: 900px; }
+  #bar .div { width: 1px; height: 18px; background: var(--line); margin: 0 6px; flex: none; }
+  #bar .chip.mth { color: var(--dst); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  @media (max-width: 900px) {
+    header { gap: 8px; padding: 0 10px; }
+    header h1 { font-size: 19px; letter-spacing: 3px; }
+    header .tag, #mini, #help, #legend { display: none; }
+    #bSearch { width: auto; flex: 1; }
+    #bar { padding: 0 10px; }
+    }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="home" title="回到全景"></h1>
+  <div class="tag">点一个知识：<em>琥珀色</em>是它站在哪些知识上，<i>青色</i>是哪些知识站在它上面</div>
+  <div class="grow"></div>
+  <button class="tbtn" id="bSearch" aria-label="找一个知识">找一个知识… <kbd>/</kbd></button>
+</header>
+<nav id="bar"></nav>
+<canvas id="cv" role="img" aria-label=""></canvas>
+<div id="formulaLayer" aria-hidden="true"></div>
+<canvas id="mini" aria-hidden="true"></canvas>
+<div id="legend"></div>
+<div id="zoom"><button id="zIn" title="放大" aria-label="放大">+</button><button id="zOut" title="缩小" aria-label="缩小">−</button><button id="zFit" title="回到合适大小" aria-label="回到合适大小">⤢</button></div>
+<div id="help">拖动空白处移动　滚轮或右下角 ＋− 缩放　拖一下卡片试试<br>选中后 <kbd>↓</kbd> 往来源走　<kbd>↑</kbd> 往后续走　<kbd>←</kbd><kbd>→</kbd> 同层换　<kbd>Esc</kbd> 回全景</div>
+<div id="caption" aria-live="polite"></div>
+<div id="tip"></div>
+<div id="palette"><div class="box"><input id="pq" placeholder="输入知识名称，如 导数、概率、向量" autocomplete="off" aria-label="找一个知识"><div class="res" id="pres"></div><div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>Enter</kbd> 打开</span><span><kbd>Esc</kbd> 关闭</span></div></div></div>
+
+
+<script type="module">
+import { normalize } from "./lib/normalize.js";
+import { formulaRuns, formulaHtml } from "./lib/formula.js";
+function setHTML(element, html) {
+  const parsed = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+  element.replaceChildren(...parsed.body.childNodes);
+}
+function fail(msg, list) {
+  setHTML(document.body, `<div class="splash"><h2>数据没能打开</h2><p>${msg}</p>${list ? `<ul>${list.map(e => `<li>${e.replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]))}</li>`).join("")}</ul>` : ""}</div>`);
+}
+// 数据由 tools/build.mjs 嵌进 window.KMAP_DATA（生成单文件网页时，上面的 import 也会换成 lib/normalize.js 的代码）
+const DATA = (() => {
+  if (!window.KMAP_DATA) { fail("这是网页模板，不能直接打开：用 tools/build.mjs 把 md（或 JSON）生成单文件网页。"); return null; }
+  const {data, errors, warns} = normalize(window.KMAP_DATA);
+  warns.forEach(w => console.warn("提醒：" + w));
+  if (errors.length) { fail(`数据有 ${errors.length} 处错误`, errors); return null; }
+  return data;
+})();
+if (!DATA) throw new Error("数据没能打开");
+const $ = s => document.querySelector(s);
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const panelW = () => 0;
+const esc = s => (s || "").replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+// 主稿允许混用 Unicode 上下标和 ^()、^{}、_x、_{}。DOM 与 Canvas 共用 lib/formula.js 的解析结果。
+function formulaWidth(c, text, size, family = FONT, weight = "400") {
+  let width = 0; for (const r of formulaRuns(text)) { const fs = r.script ? size * .76 : size; c.font = `${weight} ${fs}px ${family}`; width += c.measureText(r.text).width; } return width;
+}
+function drawFormula(c, text, x, y, size, family = FONT, weight = "400") {
+  c.save(); c.textBaseline = "alphabetic"; const base = y + size * .34;
+  for (const r of formulaRuns(text)) { const fs = r.script ? size * .76 : size; c.font = `${weight} ${fs}px ${family}`;
+    let ry = base;
+    if (r.script === "sup") ry -= size * .43;
+    else if (r.script === "sub") ry += size * .24;
+    c.fillText(r.text, x, ry); x += c.measureText(r.text).width; }
+  c.restore(); return x;
+}
+const FONT = '"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif', SERIF = '"Songti SC","STSong","Noto Serif SC",serif';
+const REG = DATA.regions.map(r => r.r);
+const ANCHOR = {}; DATA.regions.forEach((r, i) => ANCHOR[r.r] = r.anchor ?? (i + .5) / DATA.regions.length);
+const IDP = DATA.idPattern || "\\d+\\.\\d{1,2}";
+document.title = DATA.title; $("#home").textContent = DATA.title;
+$("#cv").setAttribute("aria-label", `${DATA.title}：${DATA.nodes.length} 个知识和它们之间的推导关系。用搜索找到一个知识，查看它的来源和后续。`);
+const RC = DATA.regionColor;
+const C = {ink: "#1A2433", line: "#D5DCE5", muted: "#6A7889", srcBg: "#FFF2DC", srcBd: "#E9AA4C", srcTx: "#7A4B00", srcFlow: "#D98200",
+           dstBg: "#E0F3F2", dstBd: "#5DBBBE", dstTx: "#0B4F53", dstFlow: "#0F8F95", gray: "#8D9BAD"};
+const byId = {}; DATA.nodes.forEach(n => byId[n.id] = n);
+const parents = {}, children = {};
+DATA.nodes.forEach(n => { parents[n.id] = []; children[n.id] = []; });
+DATA.edges.forEach(e => { if (e.k === "通向") return; parents[e.b].push(e.a); children[e.a].push(e.b); });
+const howOf = {}; DATA.nodes.forEach(n => n.deps.forEach(d => { if (d.how) howOf[d.id + ">" + n.id] = d.how; }));
+const LINKS = DATA.edges.filter(e => e.k !== "通向");
+const depOf = {}; DATA.nodes.forEach(n => n.deps.forEach(d => depOf[d.id + ">" + n.id] = d));
+const RELATION_TAGS = new Set(["前提", "公理", "定义", "定理", "研究对象"]);
+const isMethod = m => m && !RELATION_TAGS.has(m);
+const edgeLabel = {};
+DATA.nodes.forEach(n => n.deps.forEach(d => {
+  const key = d.id + ">" + n.id;
+  if (isMethod(d.method)) edgeLabel[key] = {parts: [{text: d.method, type: "method"}], color: "#0F7F86"};
+}));
+const METHODS = DATA.methods || [], methodsOf = id => METHODS.filter(m => (m.nodes || []).includes(id));
+const TOOLBOX = DATA.toolbox || [], toolsOf = id => TOOLBOX.filter(t => (t.usedBy || []).includes(id));
+const ENTRIES = DATA.entries || [], entriesOf = id => ENTRIES.filter(e => e.targets.some(t => (t.nodes || []).includes(id)));
+const conds = id => byId[id].conditions || [], stars = n => "★".repeat(n.importance || 0);
+// 分组：同一类的几个知识点。卡片上显示分组名前缀，图上画框；分组编号也能被选中、链接、搜索
+const GROUPS = {}; (DATA.groups || []).forEach(g => GROUPS[g.id] = {...g, members: []});
+DATA.nodes.forEach(n => { if (n.group && GROUPS[n.group]) GROUPS[n.group].members.push(n.id); });
+const gname = id => byId[id] && byId[id].group && GROUPS[byId[id].group] ? GROUPS[byId[id].group].name : "";
+const nameOf = id => byId[id] ? byId[id].name : GROUPS[id] ? GROUPS[id].name : id;
+const isRef = id => !!(byId[id] || GROUPS[id]);
+const FLOORS = [...DATA.layers].sort((a, b) => b.L - a.L);
+const hash = s => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return ((h >>> 0) % 997) / 997; };
+const closure = (id, next) => { const s = new Set(), st = [...next[id]]; while (st.length) { const x = st.pop(); if (!s.has(x)) { s.add(x); st.push(...next[x]); } } return s; };
+const wide = () => innerWidth > 900;
+
+const cv = $("#cv"), ctx = cv.getContext("2d"), mini = $("#mini"), mctx = mini.getContext("2d"), tip = $("#tip");
+const formulaLayer = $("#formulaLayer"), formulaEls = {}, formulaWidths = {}, formulaHeights = {};
+DATA.nodes.forEach(node => {
+  if (!node.one) return;
+  const element = document.createElement("div");
+  element.className = "canvas-formula";
+  setHTML(element, formulaHtml(node.one));
+  formulaLayer.append(element);
+  formulaEls[node.id] = element;
+});
+await document.fonts.ready;
+Object.entries(formulaEls).forEach(([id, element]) => { const r = element.getBoundingClientRect(); formulaWidths[id] = r.width; formulaHeights[id] = r.height; });
+let VW = 0, VH = 0, DPR = 1;
+
+// ── 知识（画成胶囊卡片，宽度按名称实测） ──
+const FS = 14;
+ctx.font = `600 ${FS}px ${FONT}`;
+const N = {};
+// 卡片两行：第一行名称，第二行标志公式（one）；宽度取两行里更宽的
+const CH = 68, OFS = 12;
+const cardH = id => { const fh = formulaHeights[id] || 0; return fh > 0 ? Math.max(CH, FS + fh + 28) : 40; };
+// 同层两行之间、同行左右之间的空隙：全景平时不画线，排紧一点字更大；家谱里要画线和箭头，留宽一点
+const GAP_HOME = {row: 40, col: 28}, GAP_FOCUS = {row: 50, col: 36};
+const FLOW_MS = 4200;   // 光点走完一条线要多少毫秒，越大越慢
+const prefixW = n => { const g = n.group && GROUPS[n.group]; if (!g) return 0; ctx.font = `${OFS}px ${FONT}`; return Math.ceil(ctx.measureText(g.name + " ›").width) + 5; };
+const nameW = n => { const p = prefixW(n); ctx.font = `600 ${FS}px ${FONT}`; return Math.ceil(ctx.measureText(n.name).width) + p + 48 + ((n.conditions || []).length ? 16 : 0); };
+const oneW = n => n.one ? Math.ceil(formulaWidths[n.id] || formulaWidth(ctx, n.one, OFS, FONT)) + 44 : 0;
+DATA.nodes.forEach(n => N[n.id] = {id: n.id, n, w: Math.max(nameW(n), oneW(n)), x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, ox: 0, oy: 0, a: 0, ta: 1, delay: 0, hx: 0, hy: 0});
+const ALL = Object.keys(N), ALLV = ALL;   // 画面上的全部卡片：知识点和没拆的分组
+
+// ── 排版：楼层定上下，层内左右由“力”来摆：同区域靠拢、有推导关系的对齐、互不重叠 ──
+// 分组里的知识点作为一个整体（单元）参与排版：排在一起、外面画框；没有分组的卡片自己就是一个单元
+const FPAD = 10, FTOP = 24, FBOT = 9, INNER = 10;   // 分组框：左右留白、顶部写分组名、底部留白、框内卡片间距
+function unitsOf(set, selfId) {
+  const U = {}, of = {};
+  for (const id of set) {
+    const g = byId[id].group && GROUPS[byId[id].group] ? byId[id].group : null, uid = g ? "g:" + g : id;
+    (U[uid] = U[uid] || {id: uid, group: g, members: [], layer: byId[id].layer, region: byId[id].region}).members.push(id);
+    of[id] = uid;
+  }
+  for (const u of Object.values(U)) {
+    u.members.sort((a, b) => ALL.indexOf(a) - ALL.indexOf(b));
+    const ws = u.members.map(id => N[id].w * (id === selfId ? 1.35 : 1));
+    const hs = u.members.map(id => id === selfId ? cardH(id) * 1.35 : cardH(id));
+    u.ws = ws;
+    u.w = ws.reduce((s, w) => s + w, 0) + (ws.length - 1) * INNER + (u.group ? 2 * FPAD : 0);
+    u.h = Math.max(...hs) + (u.group ? FTOP + FBOT : 0);
+  }
+  return {U, of};
+}
+function makeBands(set, WW, selfId, G = GAP_FOCUS) {
+  const {U} = unitsOf(set, selfId), B = {}; let y = 0;
+  for (const F of FLOORS) {
+    const on = Object.values(U).filter(u => u.layer === F.L);
+    const sum = on.reduce((s, u) => s + u.w + G.col, 0);
+    const rows = Math.max(1, Math.ceil(sum / (WW * .92)));
+    const rowH = Math.max(CH, ...on.map(u => u.h));
+    const h = on.length ? rows * rowH + (rows - 1) * G.row + 38 : 30;
+    B[F.L] = {top: y, bot: y + h, n: on.length, rows, rowH}; y += h;
+  }
+  return {B, H: y};
+}
+function simulate(set, B, WW, initX, selfId, G = GAP_FOCUS, links = LINKS) {
+  const {U, of} = unitsOf(set, selfId), P = {};
+  for (const u of Object.values(U)) {
+    const xs = u.members.map(id => initX ? initX(id) : WW * ANCHOR[byId[id].region] + (hash(id) - .5) * 240);
+    P[u.id] = {...u, b: B[u.layer], row: 0, x: xs.reduce((s, x) => s + x, 0) / xs.length, vx: 0};
+  }
+  const S = new Set(set), E = [];
+  for (const e of links) if (S.has(e.a) && S.has(e.b) && of[e.a] !== of[e.b]) E.push({a: of[e.a], b: of[e.b]});
+  const arr = Object.values(P);
+  const byBand = {}; arr.forEach(p => (byBand[p.layer] = byBand[p.layer] || []).push(p));
+  // 一层放不下时分几行：按左右次序交替分行，每行都铺满整层，左右次序基本不乱
+  const assignRows = () => { for (const L in byBand) { const g = byBand[L], r = g[0].b.rows;
+    if (r > 1) g.slice().sort((a, b) => a.x - b.x).forEach((p, i) => p.row = i % r); } };
+  const collide = () => { for (const L in byBand) { const g = byBand[L];
+    for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) {
+      const a = g[i], b = g[j]; if (a.row !== b.row) continue;
+      let dx = b.x - a.x; if (!dx) dx = hash(a.id + b.id) - .5;
+      const ox = (a.w + b.w) / 2 + G.col - Math.abs(dx);
+      if (ox > 0) { const s = (dx >= 0 ? 1 : -1) * ox / 2; a.x -= s; b.x += s; }
+    } } };
+  const IT = 400;
+  assignRows();
+  const adj = {}; for (const p of arr) adj[p.id] = [];
+  for (const e of E) { if (P[e.a] && P[e.b]) { adj[e.a].push(e.b); adj[e.b].push(e.a); } }
+  for (let it = 0; it < IT; it++) {
+    const al = 1 - it / IT;
+    // 双向扫描重心法：每层更新后立即生效，下一层用新坐标
+    const layerKeys = Object.keys(byBand).map(Number).sort((a, b) => it % 2 === 0 ? a - b : b - a);
+    for (const L of layerKeys) {
+      for (const p of byBand[L]) {
+        const neighbors = adj[p.id].map(id => P[id]).filter(Boolean);
+        if (neighbors.length > 0) {
+          const target = neighbors.reduce((s, n) => s + n.x, 0) / neighbors.length;
+          // 邻居少的节点吸引力更强（直接跟上唯一的子/父节点）
+          const strength = neighbors.length <= 2 ? 0.25 : 0.12;
+          p.x += (target - p.x) * strength * al;
+        } else {
+          p.x += (WW * ANCHOR[p.region] - p.x) * .002 * al;
+        }
+      }
+      // 每层扫完立即做碰撞，防止重叠
+      const g = byBand[L];
+      for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) {
+        const a = g[i], b = g[j]; if (a.row !== b.row) continue;
+        let dx = b.x - a.x; if (!dx) dx = hash(a.id + b.id) - .5;
+        const ox = (a.w + b.w) / 2 + G.col - Math.abs(dx);
+        if (ox > 0) { const s = (dx >= 0 ? 1 : -1) * ox / 2; a.x -= s; b.x += s; }
+      }
+    }
+    // 交叉检测：只对连到同一层同一行的邻居做判断
+    if (it % 12 === 0) {
+      for (const L in byBand) { const g = byBand[L];
+        for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) {
+          if (g[i].row !== g[j].row) continue;
+          const a = g[i], b = g[j];
+          const aN = adj[a.id].map(id => P[id]).filter(Boolean);
+          const bN = adj[b.id].map(id => P[id]).filter(Boolean);
+          let crossBefore = 0, crossAfter = 0;
+          for (const an of aN) for (const bn of bN) {
+            if (an.id === bn.id) continue;
+            if (an.layer !== bn.layer || an.row !== bn.row) continue;
+            if ((a.x - b.x) * (an.x - bn.x) < 0) crossBefore++;
+            if ((b.x - a.x) * (an.x - bn.x) < 0) crossAfter++;
+          }
+          if (crossAfter < crossBefore) { const tmp = a.x; a.x = b.x; b.x = tmp; }
+        }
+      }
+    }
+    if (it % 50 === 49 && it < IT - 100) assignRows();
+  }
+  for (let k = 0; k < 30; k++) collide();
+  const xs = arr.map(p => p.x - p.w / 2).concat(arr.map(p => p.x + p.w / 2)), shift = WW / 2 - (Math.min(...xs) + Math.max(...xs)) / 2;
+  // 单元定位后，分组里的知识点在框内从左到右排开；卡片纵向居中在框名下面的区域
+  const out = {};
+  for (const p of arr) {
+    p.x += shift; const b = p.b;
+    p.y = b.rows > 1 ? b.top + 19 + b.rowH / 2 + p.row * (b.rowH + G.row) : (b.top + b.bot) / 2;
+    let cx = p.x - p.w / 2 + (p.group ? FPAD : 0);
+    const cy = p.group ? p.y + (FTOP - FBOT) / 2 : p.y;
+    p.members.forEach((id, i) => { out[id] = {x: cx + p.ws[i] / 2, y: cy}; cx += p.ws[i] + INNER; });
+  }
+  return out;
+}
+
+// ── 状态 ──
+let methodHi = null, methodPin = null, selSet = new Set(), ctxSet = new Set(), FRAME_HITS = [], LABEL_HITS = [], hoverGroup = null;
+let mode = "home", sel = null, up = new Set(), down = new Set(), hover = null, trace = null, trail = [], chainHi = null;
+let home = null, bands = {}, bandsT = {}, ED = [], LE = [], tourPath = null, tourI = 0, tourTimer = 0, tourPlay = true, tourName = "";
+let cam = {x: 0, y: 0, k: 1}, camT = {x: 0, y: 0, k: 1};
+
+function bestLayout(set, links) {
+  // 试几种楼宽，挑一种放进屏幕后字最大的：楼窄就多分几行、往高处长；知识多时要缩小着看全楼，楼宽可以超过屏幕宽度（缩小后正好铺满）
+  const aw = VW - (wide() ? 194 : 24), ah = VH - 74 - (wide() ? 46 : 0);
+  let best = null;
+  for (const f of [.58, .66, .76, .88, 1, 1.3, 1.7, 2.2, 2.8, 3.6, 4.6]) {
+    const WW = Math.max(wide() ? 760 : 520, (VW - (wide() ? 220 : 20)) * f);
+    const {B, H} = makeBands(set, WW, null, GAP_HOME), P = simulate(set, B, WW, null, null, GAP_HOME, links);
+    const xs = set.map(id => P[id].x - N[id].w / 2).concat(set.map(id => P[id].x + N[id].w / 2));
+    const k = Math.min(1.25, aw / (Math.max(...xs) - Math.min(...xs) + 20), ah / (H + 20));
+    if (!best || k > best.k + .01) best = {k, W: WW, B, H, P};
+  }
+  return best;
+}
+function computeHome() {
+  home = bestLayout(ALL, LINKS);
+  ALL.forEach(id => { N[id].hx = home.P[id].x; N[id].hy = home.P[id].y; });
+}
+function showHome() { setTargets(home.P, ALL); setBands(home.B); refreshEdges(); }
+function setTargets(P, set) {
+  const S = new Set(set);
+  ALLV.forEach(id => { const o = N[id]; if (S.has(id)) { o.tx = P[id].x; o.ty = P[id].y; o.ta = 1; } else o.ta = 0; });
+}
+function setBands(B) { bandsT = B; for (const L in B) if (!bands[L]) bands[L] = {...B[L]}; }
+
+// ── 镜头 ──
+function fitBox(x0, y0, x1, y1, maxK, minK = .35) {
+  const panel = panelW(), sheet = mode === "focus" && !wide() ? VH * .6 : 0;
+  const capEl = $("#caption"), cap = capEl && capEl.classList.contains("show") ? (capEl.offsetHeight + 30) : 0;
+  const L = wide() ? 170 : 12, R = VW - panel - 24, T = 54, Bt = VH - 20 - sheet - cap - (mode === "home" && wide() ? 46 : 0);
+  let k = Math.min(maxK, (R - L) / (x1 - x0), (Bt - T) / (y1 - y0)); k = Math.max(minK, k);
+  camT = {k, x: (L + R) / 2 - (x0 + x1) / 2 * k, y: (T + Bt) / 2 - (y0 + y1) / 2 * k};
+  if ((y1 - y0) * k > Bt - T) camT.y = T - y0 * k;
+  if (reduce) cam = {...camT};
+}
+function fitIds(list, maxK, minK) {
+  const os = list.map(id => N[id]);
+  fitBox(Math.min(...os.map(o => o.tx - o.w * .7)), Math.min(...os.map(o => o.ty - 26)), Math.max(...os.map(o => o.tx + o.w * .7)), Math.max(...os.map(o => o.ty + 26)), maxK, minK);
+}
+const fitHome = () => { const ids = ALL; fitBox(Math.min(...ids.map(id => home.P[id].x - N[id].w / 2)) - 10, -10, Math.max(...ids.map(id => home.P[id].x + N[id].w / 2)) + 10, home.H + 10, 1.25, .15); };
+const toWorld = (sx, sy) => ({x: (sx - cam.x) / cam.k, y: (sy - cam.y) / cam.k});
+
+// ── 当前每张卡片的样子 ──
+function scaleOf(id) { return mode === "focus" && id === sel ? 1.35 : mode === "tour" && id === tourPath[tourI] ? 1.15 : 1; }
+function look(id) {
+  if (mode === "focus") {
+    const k = selSet.has(id) ? "self" : up.has(id) ? "src" : down.has(id) ? "dst" : "plain";
+    return {k, dim: ctxSet.has(id) ? .38 : trace && !trace.has(id) ? .28 : 1};
+  }
+  if (mode === "tour") { const i = tourPath.indexOf(id);
+    return i < 0 || i > tourI ? {k: "plain", dim: .25} : {k: i === tourI ? "self" : "src", dim: 1}; }
+  if (hover) {
+    if (id === hover) return {k: "hov", dim: 1};
+    if (parents[hover].includes(id)) return {k: "src", dim: 1};
+    if (children[hover].includes(id)) return {k: "dst", dim: 1};
+    return {k: "plain", dim: .22};
+  }
+  if (chainHi) return chainHi.includes(id) ? {k: "src", dim: 1} : {k: "plain", dim: .25};
+  if (methodHi) return methodHi.nodes.includes(id) ? {k: "dst", dim: 1} : {k: "plain", dim: .25};
+  return {k: "plain", dim: 1};
+}
+
+// ── 关系线：哪些画、什么颜色、要不要流动 ──
+function lineageEdges() {
+  const inU = k => selSet.has(k) || up.has(k), inD = k => selSet.has(k) || down.has(k);
+  const E = LINKS.filter(e => (inU(e.a) && inU(e.b)) || (inD(e.a) && inD(e.b)));
+  const ch = {}; E.forEach(e => (ch[e.a] = ch[e.a] || []).push(e.b));
+  const reach = (a, b) => { const st = (ch[a] || []).filter(x => x !== b), seen = new Set();
+    while (st.length) { const x = st.pop(); if (x === b) return true; if (seen.has(x)) continue; seen.add(x); st.push(...(ch[x] || [])); } return false; };
+  // 能经别的知识间接到达的线不画，只留“最近的一步”；和它直接相连的线都保留
+  return E.filter(e => selSet.has(e.a) || selSet.has(e.b) || !reach(e.a, e.b)).map(e => ({a: e.a, b: e.b, src: inU(e.a) && inU(e.b)}));
+}
+function refreshEdges() {
+  ED = [];
+  const add = (a, b, color, al, w, flow, arrow) => ED.push({a, b, color, al, w, flow, arrow, ph: hash(a + b)});
+  if (mode === "focus") {
+    LE.forEach(e => { const on = !trace || (trace.has(e.a) && trace.has(e.b));
+      add(e.a, e.b, e.src ? C.srcBd : C.dstBd, on ? (trace ? 1 : .75) : .12, on && trace ? 2.6 : 1.7, on, on); });
+  } else if (mode === "tour") {
+    LINKS.forEach(e => add(e.a, e.b, C.gray, .05, 1, false, false));
+    for (let i = 1; i <= tourI; i++) add(tourPath[i - 1], tourPath[i], C.srcBd, 1, 2.6, true, true);
+  } else if (mode === "derive") {
+    return; // derive 模式在 deriveStep 里直接管理 ED
+  } else {
+    const VL = LINKS;
+    const hi = hover ? VL.filter(e => e.a === hover || e.b === hover) : chainHi ? chainHi.slice(1).map((b, i) => ({a: chainHi[i], b})) : [];
+    VL.forEach(e => add(e.a, e.b, C.gray, hi.length ? .04 : e.main ? .32 : .13, e.main ? 1.7 : 1, false, false));
+    hi.forEach(e => add(e.a, e.b, (hover && e.b === hover) || chainHi ? C.srcBd : C.dstBd, 1, 2.2, true, true));
+  }
+}
+
+// ── 曲线几何 ──
+function geom(id) { const s = scaleOf(id), o = N[id]; return {x: o.x, y: o.y, w: o.w * s, h: cardH(id) * s}; }
+// 线从卡片哪条边出、进哪条边：上下错开的走上下边；同一行挨着的走侧边；同一行隔得远的从上方绕
+function sides(a, b) {
+  const A = geom(a), B = geom(b), dy = A.y - B.y;
+  if (dy > 14) return ["top", "bottom"];
+  if (dy < -14) return ["bottom", "top"];
+  if (Math.abs(A.x - B.x) < (A.w + B.w) / 2 + 70) return ["side", "side"];
+  return ["top", "top"];
+}
+// 接线点沿边分散：同一条边上的几根线按另一端的左右位置排开，不挤成一点，箭头也各自分开
+let PORTS = {};
+function computePorts() {
+  const g = {};
+  for (const e of ED) {
+    if (e.al * Math.min(N[e.a].a, N[e.b].a) < .02) continue;
+    const [sa, sb] = sides(e.a, e.b); if (sa === "side") continue;
+    const k = e.a + ">" + e.b;
+    (g[e.a + "|" + sa] = g[e.a + "|" + sa] || new Map()).set(k, {k, end: "a", other: N[e.b].x});
+    (g[e.b + "|" + sb] = g[e.b + "|" + sb] || new Map()).set(k, {k, end: "b", other: N[e.a].x});
+  }
+  PORTS = {};
+  for (const key in g) {
+    const list = [...g[key].values()].sort((p, q) => p.other - q.other), G = geom(key.split("|")[0]);
+    const span = Math.min(G.w * .72, (list.length - 1) * 16);
+    list.forEach((p, i) => { (PORTS[p.k] = PORTS[p.k] || {})[p.end] = list.length === 1 ? 0 : -span / 2 + span * i / (list.length - 1); });
+  }
+}
+function curve(a, b) {
+  const A = geom(a), B = geom(b), [sa] = sides(a, b), pt = PORTS[a + ">" + b] || {};
+  if (sa === "side") {
+    const d = B.x > A.x ? 1 : -1, x1 = A.x + d * A.w / 2, x2 = B.x - d * B.w / 2, m = Math.max(18, Math.abs(x2 - x1) * .5);
+    return [x1, A.y, x1 + d * m, A.y, x2 - d * m, B.y, x2, B.y];
+  }
+  const x1 = A.x + (pt.a || 0), x2 = B.x + (pt.b || 0);
+  let y1, y2, c1, c2;
+  if (sa === "top" && A.y - B.y > 14) { y1 = A.y - A.h / 2; y2 = B.y + B.h / 2; const m = Math.max(24, (y1 - y2) * .5); c1 = y1 - m; c2 = y2 + m; }
+  else if (sa === "bottom") { y1 = A.y + A.h / 2; y2 = B.y - B.h / 2; const m = Math.max(24, (y2 - y1) * .5); c1 = y1 + m; c2 = y2 - m; }
+  else { y1 = A.y - A.h / 2; y2 = B.y - B.h / 2; c1 = y1 - 46; c2 = y2 - 46; }
+  return [x1, y1, x1, c1, x2, c2, x2, y2];
+}
+const bez = (p, t) => { const u = 1 - t; return [u*u*u*p[0] + 3*u*u*t*p[2] + 3*u*t*t*p[4] + t*t*t*p[6], u*u*u*p[1] + 3*u*u*t*p[3] + 3*u*t*t*p[5] + t*t*t*p[7]]; };
+
+// ── 每一帧：卡片像弹簧一样追向目标位置 ──
+let last = performance.now(), drag = null;
+const pointers = new Map();
+function frame(now) {
+  last = now;
+  for (const id of ALLV) {
+    const o = N[id];
+    if (now < o.delay) continue;
+    if (reduce) { o.x = o.tx; o.y = o.ty; o.a = o.ta; continue; }
+    if (drag && drag.id === id && drag.moved) { o.a += (o.ta - o.a) * .15; continue; }
+    o.vx = (o.vx + (o.tx + o.ox - o.x) * .085) * .74; o.vy = (o.vy + (o.ty + o.oy - o.y) * .085) * .74;
+    o.x += o.vx; o.y += o.vy; o.a += (o.ta - o.a) * .12;
+  }
+  for (const L in bandsT) { const b = bands[L], t = bandsT[L]; b.n = t.n; if (reduce) { b.top = t.top; b.bot = t.bot; continue; } b.top += (t.top - b.top) * .12; b.bot += (t.bot - b.bot) * .12; }
+  if (!reduce && !(drag && drag.pan && drag.moved)) { cam.x += (camT.x - cam.x) * .13; cam.y += (camT.y - cam.y) * .13; cam.k += (camT.k - cam.k) * .13; }
+  draw(now); drawMini();
+
+  // 全部可见时收起小地图，放大或移开后再出现
+  if (now - (frame.chk || 0) > 300) { frame.chk = now;
+    const R = VW, out = ALLV.some(id => { const o = N[id]; if (o.ta < .5) return false;
+      const x = o.tx * cam.k + cam.x, y = o.ty * cam.k + cam.y; return x < 150 || x > R || y < 40 || y > VH; });
+    mini.classList.toggle("hide", !out); }
+  requestAnimationFrame(frame);
+}
+
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+
+function draw(now) {
+  const c = ctx;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.clearRect(0, 0, VW, VH);
+  // 楼层：隔层浅底、楼板线
+  for (const F of FLOORS) { const b = bands[F.L]; if (!b) continue;
+    const y0 = b.top * cam.k + cam.y, y1 = b.bot * cam.k + cam.y;
+    if (F.L % 2 === 0) { c.fillStyle = "rgba(226,231,238,.45)"; c.fillRect(0, y0, VW, y1 - y0); }
+    c.fillStyle = "#DCE2EA"; c.fillRect(0, y1 - .5, VW, 1); }
+  // 点阵
+  let g = 26 * cam.k; while (g < 14) g *= 2;
+  c.fillStyle = "#D3DAE3";
+  for (let x = ((cam.x % g) + g) % g; x < VW; x += g) for (let y = ((cam.y % g) + g) % g; y < VH; y += g) c.fillRect(x - .7, y - .7, 1.4, 1.4);
+
+  c.setTransform(DPR * cam.k, 0, 0, DPR * cam.k, DPR * cam.x, DPR * cam.y);
+  // 分组框：框住同一分组里正在显示的知识点，框上写分组名（可点）
+  FRAME_HITS = [];
+  for (const gid in GROUPS) {
+    const ms = GROUPS[gid].members.filter(id => N[id].a > .25); if (!ms.length) continue;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, al = 0, dim = 0;
+    for (const id of ms) { const g = geom(id); x0 = Math.min(x0, g.x - g.w / 2); x1 = Math.max(x1, g.x + g.w / 2); y0 = Math.min(y0, g.y - g.h / 2); y1 = Math.max(y1, g.y + g.h / 2); al = Math.max(al, N[id].a); dim = Math.max(dim, look(id).dim); }
+    x0 -= FPAD; x1 += FPAD; y0 -= FTOP; y1 += FBOT;
+    const rc = RC[byId[ms[0]].region], on = gid === sel || gid === hoverGroup;
+    c.globalAlpha = al * dim; rr(c, x0, y0, x1 - x0, y1 - y0, 14);
+    c.fillStyle = rc + (on ? "1C" : "0F"); c.fill(); c.strokeStyle = rc + (on ? "AA" : "55"); c.lineWidth = on ? 1.8 : 1; c.stroke();
+    c.fillStyle = rc; c.font = `700 12px ${FONT}`; c.textBaseline = "middle";
+    c.fillText(GROUPS[gid].name + "  ›", x0 + 11, y0 + 12);
+    FRAME_HITS.push({gid, x0, y0, x1, y1: y0 + FTOP});
+  }
+  c.globalAlpha = 1;
+  // 线
+  computePorts();
+  for (const e of ED) {
+    const A = N[e.a], B = N[e.b], al = e.al * Math.min(A.a, B.a); if (al < .02) continue;
+    const p = curve(e.a, e.b);
+    c.globalAlpha = al; c.strokeStyle = e.color; c.lineWidth = e.w;
+    c.beginPath(); c.moveTo(p[0], p[1]); c.bezierCurveTo(p[2], p[3], p[4], p[5], p[6], p[7]); c.stroke();
+    if (e.arrow) { const ang = Math.atan2(p[7] - p[5], p[6] - p[4]), s = 8.5;
+      c.fillStyle = e.color; c.beginPath(); c.moveTo(p[6], p[7]);
+      c.lineTo(p[6] - s * Math.cos(ang - .45), p[7] - s * Math.sin(ang - .45)); c.lineTo(p[6] - s * Math.cos(ang + .45), p[7] - s * Math.sin(ang + .45)); c.fill(); }
+    // 流动的光点：沿推导方向从来源流向结论
+    if (e.flow && !reduce) {
+      const fl = e.color === C.dstBd ? C.dstFlow : C.srcFlow;
+      for (let k = 0; k < 2; k++) { const t = ((now / FLOW_MS) + e.ph + k / 2) % 1, [x, y] = bez(p, t);
+        c.globalAlpha = al * .22; c.fillStyle = fl; c.beginPath(); c.arc(x, y, 6, 0, 7); c.fill();
+        c.globalAlpha = al; c.beginPath(); c.arc(x, y, 2.6, 0, 7); c.fill(); }
+    }
+  }
+  c.globalAlpha = 1;
+  // 卡片
+  const top = id => (id === hover || id === sel) ? 1 : 0;
+  const order = ALLV.slice().sort((a, b) => top(a) - top(b));
+  for (const id of order) {
+    const o = N[id], formula = formulaEls[id];
+    if (o.a < .02) { if (formula) formula.style.opacity = "0"; continue; }
+    const L = look(id), s = scaleOf(id), w = o.w * s, h = cardH(id) * s, x = o.x - w / 2, y = o.y - h / 2, RAD = 12 * s, ny = byId[id].one ? o.y - 11 * s : o.y;
+    let fill = "#fff", stroke = C.line, text = C.ink;
+    if (L.k === "src") { fill = C.srcBg; stroke = C.srcBd; text = C.srcTx; }
+    if (L.k === "dst") { fill = C.dstBg; stroke = C.dstBd; text = C.dstTx; }
+    if (L.k === "self") { fill = C.ink; stroke = C.ink; text = "#fff"; }
+    if (L.k === "hov") stroke = C.ink;
+    const A = o.a * L.dim;
+    if (L.k === "self" && !reduce) { const ph = (now % 2200) / 2200;
+      c.globalAlpha = A * (1 - ph) * .5; c.strokeStyle = C.ink; c.lineWidth = 1.5; rr(c, x - ph * 12, y - ph * 12, w + ph * 24, h + ph * 24, RAD + ph * 12); c.stroke(); }
+    c.globalAlpha = A;
+    if (id === hover || L.k === "self") { c.shadowColor = "rgba(26,36,51,.22)"; c.shadowBlur = 16; c.shadowOffsetY = 5; }
+    rr(c, x, y, w, h, RAD); c.fillStyle = fill; c.fill();
+    c.shadowColor = "transparent"; c.shadowBlur = 0; c.shadowOffsetY = 0;
+    c.lineWidth = id === hover ? 1.6 : 1; c.strokeStyle = stroke; c.stroke();
+    // 区域色点和条件菱形已移除，减少视觉干扰
+    let nx = x + 14 * s; const gp = gname(id);
+    if (gp) { c.font = `${OFS * s}px ${FONT}`; c.fillStyle = L.k === "self" ? "#B8C3D1" : C.muted; c.fillText(gp + " ›", nx, ny + .5); nx += c.measureText(gp + " ›").width + 5 * s; }
+    c.fillStyle = text;
+    c.font = L.k === "self" ? `700 ${FS * s}px ${SERIF}` : `600 ${FS * s}px ${FONT}`;
+    c.fillText(byId[id].name, nx, ny + .5);
+    // 第二行：KaTeX 公式叠在 Canvas 卡片上；公式用深色突出显示
+    if (byId[id].one && formula) {
+      const fx = (x + 14 * s) * cam.k + cam.x;
+      const fy = (o.y + 4 * s) * cam.k + cam.y;
+      const transform = `translate3d(${fx}px,${fy}px,0) scale(${cam.k * s})`;
+      if (formula.__transform !== transform) { formula.style.transform = transform; formula.__transform = transform; }
+      const color = L.k === "self" ? "#E0E6ED" : L.k === "src" ? "#6B4A12" : L.k === "dst" ? "#2A5F62" : C.ink;
+      formula.style.color = color; formula.style.opacity = String(A);
+    } else if (byId[id].one) {
+      c.fillStyle = L.k === "self" ? "#E0E6ED" : L.k === "src" ? "#6B4A12" : L.k === "dst" ? "#2A5F62" : C.ink;
+      drawFormula(c, byId[id].one, x + 14 * s, o.y + 14 * s + .5, OFS * s, FONT);
+    }
+  }
+  // 连线标签：文字在线上，底下断开线；方法名和工具名分色
+  c.setTransform(DPR * cam.k, 0, 0, DPR * cam.k, DPR * cam.x, DPR * cam.y);
+  c.font = `600 11px ${FONT}`;
+  const nodeRects = [];
+  for (const id of ALLV) {
+    const o = N[id]; if (o.a < .3) continue;
+    const s = scaleOf(id);
+    nodeRects.push({x: o.x, y: o.y, w: o.w * s + 16, h: cardH(id) * s + 10});
+  }
+  const placedLabels = []; LABEL_HITS = [];
+  const METHOD_COLOR = "#0F7F86", TOOL_COLOR = "#C77700", BRACKET_COLOR = "#6A7889";
+  for (const e of ED) {
+    const eA = N[e.a], eB = N[e.b], al = e.al * Math.min(eA.a, eB.a); if (al < .02) continue;
+    const lbl = edgeLabel[e.a + ">" + e.b];
+    if (!lbl || al <= 0.3 || (cam.k <= 0.55 && mode !== "focus")) continue;
+    // 计算总文字宽度
+    const fullText = "【" + lbl.parts.map(p => p.text).join(" · ") + "】";
+    const tw = c.measureText(fullText).width, lw = tw + 10, lh = 16;
+    // 沿曲线找空位
+    const p = curve(e.a, e.b);
+    let bestX, bestY, found = false;
+    for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8]) {
+      const [bx, by] = bez(p, t);
+      let hit = false;
+      for (const nr of nodeRects) {
+        if (Math.abs(bx - nr.x) < (lw + nr.w) / 2 && Math.abs(by - nr.y) < (lh + nr.h) / 2) { hit = true; break; }
+      }
+      if (!hit) {
+        for (const pl of placedLabels) {
+          if (Math.abs(bx - pl.x) < (lw + pl.w) / 2 + 4 && Math.abs(by - pl.y) < (lh + pl.h) / 2 + 2) { hit = true; break; }
+        }
+      }
+      if (!hit) { bestX = bx; bestY = by; found = true; break; }
+    }
+    if (!found) { [bestX, bestY] = bez(p, 0.5); }
+    placedLabels.push({x: bestX, y: bestY, w: lw, h: lh});
+    LABEL_HITS.push({x: bestX, y: bestY, w: lw, h: lh, a: e.a, b: e.b});
+    // 断开线
+    c.globalAlpha = al;
+    c.fillStyle = "#F2F4F7";
+    c.fillRect(bestX - lw / 2, bestY - lh / 2, lw, lh);
+    // 分色绘制：【方法 · 工具】
+    c.textBaseline = "middle"; c.textAlign = "left";
+    let cx = bestX - tw / 2;
+    c.fillStyle = BRACKET_COLOR; c.fillText("【", cx, bestY); cx += c.measureText("【").width;
+    lbl.parts.forEach((part, i) => {
+      if (i > 0) { c.fillStyle = BRACKET_COLOR; c.fillText(" · ", cx, bestY); cx += c.measureText(" · ").width; }
+      c.fillStyle = part.type === "method" ? METHOD_COLOR : part.type === "tool" ? TOOL_COLOR : BRACKET_COLOR;
+      c.fillText(part.text, cx, bestY); cx += c.measureText(part.text).width;
+    });
+    c.fillStyle = BRACKET_COLOR; c.fillText("】", cx, bestY);
+  }
+  c.globalAlpha = 1;
+  c.globalAlpha = 1;
+  c.globalAlpha = 1;
+  // 左侧楼层名，贴着屏幕左边
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (wide()) {
+    const gr = c.createLinearGradient(0, 0, 175, 0); gr.addColorStop(0, "rgba(242,244,247,.97)"); gr.addColorStop(.75, "rgba(242,244,247,.85)"); gr.addColorStop(1, "rgba(242,244,247,0)");
+    c.fillStyle = gr; c.fillRect(0, 0, 175, VH);
+  }
+  c.textBaseline = "middle";
+  for (const F of FLOORS) { const b = bands[F.L]; if (!b) continue;
+    const y0 = b.top * cam.k + cam.y, y1 = b.bot * cam.k + cam.y; if (y1 < 40 || y0 > VH) continue;
+    const cy = Math.max(Math.min((y0 + y1) / 2, y1 - 14), y0 + 16), nm = F.name;
+    c.globalAlpha = b.n ? 1 : .4;
+    c.fillStyle = "#A9B4C2"; c.font = `600 11px "SF Mono",Menlo,monospace`;
+    if (y1 - y0 > 40) { c.fillText("F" + F.L, 20, cy - 9); c.fillStyle = C.ink; c.font = `15px ${SERIF}`; c.fillText(nm, 20, cy + 9); }
+    else { c.fillText("F" + F.L, 20, cy); c.fillStyle = C.muted; c.font = `12px ${SERIF}`; c.fillText(nm, 46, cy); }
+  }
+  c.globalAlpha = 1;
+}
+
+// ── 小地图 ──
+function drawMini() {
+  if (!wide()) return;
+  const W = 180, H = 120, c = mctx; c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, W, H);
+  const vis = ALLV.filter(id => N[id].ta > .5); if (!vis.length) return;
+  const xs = vis.map(id => N[id].tx), ys = vis.map(id => N[id].ty);
+  const x0 = Math.min(...xs) - 80, x1 = Math.max(...xs) + 80, y0 = Math.min(...ys) - 40, y1 = Math.max(...ys) + 40;
+  const k = Math.min((W - 16) / (x1 - x0), (H - 16) / (y1 - y0)), ox = (W - (x1 - x0) * k) / 2 - x0 * k, oy = (H - (y1 - y0) * k) / 2 - y0 * k;
+  mini.__m = {k, ox, oy};
+  for (const id of vis) { const o = N[id], L = look(id);
+    c.globalAlpha = L.dim < 1 ? .3 : 1;
+    c.fillStyle = L.k === "src" ? C.srcBd : L.k === "dst" ? C.dstBd : L.k === "self" ? C.ink : RC[byId[id].region];
+    c.fillRect(o.x * k + ox - 2, o.y * k + oy - 1.5, Math.max(4, o.w * k * .8), 3); }
+  c.globalAlpha = 1;
+  const a = toWorld(0, 0), b = toWorld(VW, VH);
+  c.strokeStyle = C.ink; c.lineWidth = 1.2; c.strokeRect(a.x * k + ox, a.y * k + oy, (b.x - a.x) * k, (b.y - a.y) * k);
+}
+function miniJump(e) { const m = mini.__m; if (!m) return; const r = mini.getBoundingClientRect();
+  const wx = (e.clientX - r.left - m.ox) / m.k, wy = (e.clientY - r.top - m.oy) / m.k, vw = VW;
+  camT = {k: camT.k, x: vw / 2 - wx * camT.k, y: VH / 2 - wy * camT.k}; }
+mini.addEventListener("pointerdown", e => { miniJump(e); mini.setPointerCapture(e.pointerId); mini.onpointermove = miniJump; });
+mini.addEventListener("pointerup", () => mini.onpointermove = null);
+
+// ── 点到了哪张卡片 ──
+function pick(sx, sy) {
+  const p = toWorld(sx, sy); let best = null;
+  for (const id of ALLV) { const o = N[id]; if (o.ta < .5) continue; const s = scaleOf(id), w = o.w * s / 2 + 3, h = cardH(id) * s / 2 + 3;
+    if (Math.abs(p.x - o.x) < w && Math.abs(p.y - o.y) < h) best = id; }
+  return best;
+}
+
+function pickFrame(sx, sy) {
+  const p = toWorld(sx, sy);
+  for (const f of FRAME_HITS) if (p.x >= f.x0 && p.x <= f.x1 && p.y >= f.y0 && p.y <= f.y1) return f.gid;
+  return null;
+}
+function pickEdge(sx, sy) {
+  const p = toWorld(sx, sy);
+  // 先检查连线标签文字区域
+  for (const lb of LABEL_HITS) {
+    if (Math.abs(p.x - lb.x) < lb.w / 2 + 4 && Math.abs(p.y - lb.y) < lb.h / 2 + 4) {
+      const dep = depOf[lb.a + ">" + lb.b];
+      if (dep) return { a: lb.a, b: lb.b, dep };
+    }
+  }
+  // 再检查连线本身
+  for (const e of ED) {
+    if (e.al < .1) continue;
+    const pts = curve(e.a, e.b);
+    for (let t = 0; t <= 1; t += .05) {
+      const [bx, by] = bez(pts, t);
+      if (Math.abs(p.x - bx) < 12 / cam.k && Math.abs(p.y - by) < 12 / cam.k) {
+        const dep = depOf[e.a + ">" + e.b];
+        return dep ? { a: e.a, b: e.b, dep } : null;
+      }
+    }
+  }
+  return null;
+}
+function setEdgeTip(edge, ev) {
+  clearTimeout(tipCloseTimer);
+  const d = edge.dep;
+  const fromName = byId[edge.a]?.name || edge.a;
+  const toName = byId[edge.b]?.name || edge.b;
+  const stripIds = s => (s||'').replace(/〔[A-Z]\d+[^〕]*〕/g, '').replace(/（[A-Z]\d+）/g, '').replace(/[A-Z]\d{2}\s*·?\s*[A-Z]\d*/g, '').replace(/\s+/g, ' ').trim();
+  let html = `<div class="dep-flow"><span class="lk" data-id="${edge.a}">${esc(fromName)}</span><span class="arrow">──→</span><span class="lk" data-id="${edge.b}">${esc(toName)}</span></div>`;
+  if (d.method && isMethod(d.method)) {
+    const mName = d.method;
+    let m = METHODS.find(x => x.name === mName);
+    if (!m) m = METHODS.find(x => (x.labels || []).some(l => mName.replace(/法$/, '') === l || l === mName));
+    if (!m) m = METHODS.find(x => (x.labels || []).some(l => mName.includes(l)));
+    html += `<div class="tip-method" style="font-size:15px;margin:8px 0">【${esc(mName)}】</div>`;
+    if (m) {
+      if (m.desc) html += `<p style="margin:6px 0">${formulaHtml(stripIds(m.desc))}</p>`;
+      if (m.direction) html += `<div style="margin:5px 0"><span style="color:#5DBBBE;font-weight:600">方向：</span>${formulaHtml(stripIds(m.direction))}</div>`;
+      if (m.basis) html += `<div style="margin:5px 0"><span style="color:#B8C3D1;font-weight:600">依据：</span>${formulaHtml(stripIds(m.basis))}</div>`;
+      if (m.signal) html += `<div style="margin:5px 0"><span style="color:#FFD08A;font-weight:600">信号：</span>${formulaHtml(stripIds(m.signal))}</div>`;
+      if ((m.examples || []).length) m.examples.forEach(e => { html += `<div style="margin:3px 0;color:#5DBBBE">▸ ${formulaHtml(stripIds(e))}</div>`; });
+      if ((m.pitfalls || []).length) m.pitfalls.forEach(p => { html += `<div style="margin:3px 0;color:#FF8A8A">⚠ ${formulaHtml(stripIds(p))}</div>`; });
+    } else {
+      html += `<small style="color:#B8C3D1">（该方法暂无详细说明）</small>`;
+    }
+  }
+  if (!d.method) html += `<small style="color:#B8C3D1">无方法标注</small>`;
+  setHTML(tip, "<div class=\"tip-inner\">" + html + "</div>");
+  tip.classList.add("show");
+  tip.classList.remove("arrow-left", "arrow-right", "arrow-top");
+  const tipW = Math.min(620, tip.scrollWidth + 8);
+  const tipH = Math.min(innerHeight - 80, tip.scrollHeight + 8);
+  let left = ev.clientX + 16;
+  if (left + tipW > innerWidth - 12) { left = ev.clientX - tipW - 16; tip.classList.add("arrow-right"); }
+  else { tip.classList.add("arrow-left"); }
+  let top = ev.clientY - 20;
+  if (top + tipH > innerHeight - 12) top = innerHeight - tipH - 12;
+  if (top < 60) top = 60;
+  tip.style.left = Math.max(12, left) + "px";
+  tip.style.top = top + "px";
+  tip.querySelectorAll("[data-id]").forEach(a => { a.onclick = () => navTo(a.dataset.id); });
+}
+function setGroupTip(gid, e) {
+  clearTimeout(tipCloseTimer);
+  const g = GROUPS[gid];
+  let h = `<b>分组 · ${esc(g.name)}</b>`;
+  if (g.one) h += `<div class="hero-formula">${formulaHtml(g.one)}</div>`;
+  h += `<small>${g.members.length} 个知识点：${g.members.map(k => `<span class="lk" data-id="${k}">${esc(byId[k].name)}</span>`).join(" ")}</small>`;
+  if (g.what) h += `<p>${linkParen(g.what)}</p>`;
+  if ((g.points || []).length) h += g.points.map(t => `<span class="rel">${linkParen(t)}</span>`).join("");
+  if (g.from) h += `<h3>从哪来</h3><p>${linkParen(g.from)}</p>`;
+  if (g.next) h += `<h3>后来发展到</h3><p>${linkParen(g.next)}</p>`;
+  if (g.use) h += `<h3>用在哪</h3><p>${linkParen(g.use)}</p>`;
+  if (g.eg) h += `<h3>例子</h3><p>${linkParen(g.eg)}</p>`;
+  if ((g.notes || []).length) h += g.notes.map(t => `<small>${linkParen(t)}</small>`).join("");
+  setHTML(tip, "<div class=\"tip-inner\">" + h + "</div>");
+  tip.classList.add("show");
+  // 分组定位：用框的中心位置
+  if (e) {
+    const frame = FRAME_HITS.find(f => f.gid === gid);
+    if (frame) {
+      const cx = (frame.x0 + frame.x1) / 2 * cam.k + cam.x;
+      const cy = (frame.y0 + frame.y1) / 2 * cam.k + cam.y + 56;
+      const hw = (frame.x1 - frame.x0) / 2 * cam.k;
+      // Reuse positionTip logic inline
+      tip.classList.remove("arrow-left", "arrow-right", "arrow-top");
+      const gap = 14;
+      const tipW = Math.min(560, tip.scrollWidth + 8);
+      const tipH = Math.min(innerHeight - 80, tip.scrollHeight + 8);
+      let left = cx + hw + gap;
+      if (left + tipW > innerWidth - 12) { left = cx - hw - gap - tipW; tip.classList.add("arrow-right"); }
+      else { tip.classList.add("arrow-left"); }
+      let top = cy - 30;
+      if (top + tipH > innerHeight - 12) top = innerHeight - tipH - 12;
+      if (top < 60) top = 60;
+      const arrowY = Math.max(16, Math.min(tipH - 20, cy - top));
+      tip.style.setProperty("--arrow-y", arrowY + "px");
+      tip.style.left = Math.max(12, left) + "px";
+      tip.style.top = top + "px";
+    } else {
+      positionTip(e, null);
+    }
+  }
+  tip.querySelectorAll("[data-id]").forEach(a => { a.onclick = () => navTo(a.dataset.id); });
+}
+
+// ── 指针：拖空白处移动、拖卡片会弹回、滚轮缩放、双指缩放 ──
+cv.addEventListener("pointerdown", e => {
+  cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, {x: e.clientX, y: e.clientY - 56});
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; drag = {pinch: Math.hypot(a.x - b.x, a.y - b.y), k: cam.k, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, pan: true, moved: true}; return; }
+  const sx = e.clientX, sy = e.clientY - 56, id = pick(sx, sy);
+  drag = {id, sx, sy, cx: cam.x, cy: cam.y, moved: false, pan: !id, vx: 0, vy: 0, lx: sx, ly: sy};
+  setTip(null);
+});
+cv.addEventListener("pointermove", e => {
+  const sx = e.clientX, sy = e.clientY - 56;
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, {x: sx, y: sy});
+  if (drag && drag.pinch) { if (pointers.size < 2) return; const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    zoomAt(drag.cx, drag.cy, drag.k * d / drag.pinch, true); return; }
+  if (!drag) { const id = pick(sx, sy), fg = id ? null : pickFrame(sx, sy);
+    if (fg !== hoverGroup) { hoverGroup = fg; }
+    setHover(id, e);
+    {
+      if (fg) { tipCurrentEdge = null; clearTimeout(tipShowTimer); tipShowTimer = setTimeout(() => setGroupTip(fg, e), 300); }
+      if (!id && !fg) { const edge = pickEdge(sx, sy); if (edge) { const ek = edge.a+">"+edge.b; if (tipCurrentEdge !== ek) { clearTimeout(tipShowTimer); tipCurrentEdge = ek; tipShowTimer = setTimeout(() => setEdgeTip(edge, e), 300); } } else { if (tipCurrentEdge) { tipCurrentEdge = null; clearTimeout(tipShowTimer); scheduleTipClose(); } } }
+    }
+    cv.className = id || fg ? "point" : ""; return; }
+  const dx = sx - drag.sx, dy = sy - drag.sy;
+  if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; cv.className = "grabbing"; setHover(null); }
+  if (!drag.moved) return;
+  if (drag.pan) { cam.x = drag.cx + dx; cam.y = drag.cy + dy; camT = {...cam}; drag.vx = sx - drag.lx; drag.vy = sy - drag.ly; drag.lx = sx; drag.ly = sy; }
+  else { const o = N[drag.id], p = toWorld(sx, sy); o.x = p.x; o.y = p.y;
+    // 相连的知识被“拽”过来一点，松手后都弹回原位
+    [...parents[drag.id], ...children[drag.id]].forEach(k => { N[k].ox = (p.x - o.tx) * .28; N[k].oy = (p.y - o.ty) * .28; }); }
+});
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  if (!drag) return;
+  if (drag.pinch) { if (pointers.size === 0) drag = null; return; }
+  if (!drag.moved && drag.id) navTo(drag.id);
+  else if (!drag.moved && !pickFrame(drag.sx, drag.sy)) tip.classList.remove("show");
+  else if (!drag.moved) { const fg = pickFrame(drag.sx, drag.sy); if (fg) navTo(fg); }
+  if (drag.moved && drag.pan && !reduce) { camT.x += drag.vx * 9; camT.y += drag.vy * 9; }
+  if (drag.moved && !drag.pan) ALLV.forEach(k => { N[k].ox = 0; N[k].oy = 0; });
+  drag = null; cv.className = "";
+}
+cv.addEventListener("pointerup", endPointer); cv.addEventListener("pointercancel", endPointer);
+cv.addEventListener("pointerleave", () => { if (!drag && true) scheduleTipClose(); });
+function zoomAt(mx, my, k2, instant) {
+  k2 = Math.min(2.6, Math.max(.15, k2));
+  const base = instant ? cam : camT;
+  camT = {k: k2, x: mx - (mx - base.x) * k2 / base.k, y: my - (my - base.y) * k2 / base.k};
+  if (instant || reduce) cam = {...camT};
+}
+cv.addEventListener("wheel", e => { e.preventDefault();
+  if (!e.ctrlKey && e.deltaMode === 0 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) { camT.x -= e.deltaX; return; }
+  zoomAt(e.clientX, e.clientY - 56, camT.k * Math.exp(-e.deltaY * (e.ctrlKey ? .012 : .003))); }, {passive: false});
+
+// 缩放按钮、双击放大
+function fitCurrent() { if (mode === "focus") fitIds([sel, ...up, ...down], 1.3, .45); else if (mode === "tour") tourStep(); else fitHome(); }
+const zoomBy = f => { zoomAt(VW / 2, VH / 2, camT.k * f); };
+$("#zIn").onclick = () => zoomBy(1.3); $("#zOut").onclick = () => zoomBy(1 / 1.3); $("#zFit").onclick = fitCurrent;
+cv.addEventListener("dblclick", e => { if (!pick(e.clientX, e.clientY - 56)) { zoomAt(e.clientX, e.clientY - 56, camT.k * 1.6); } });
+addEventListener("keydown", e => { if (pal.classList.contains("show") || e.metaKey || e.ctrlKey) return;
+  if (e.key === "+" || e.key === "=") zoomBy(1.3); if (e.key === "-") zoomBy(1 / 1.3); if (e.key === "0") fitCurrent(); });
+
+// ── 悬停 ──
+let tipShowTimer = 0, tipCurrentEdge = null;
+function setHover(id, e) {
+  if (id !== hover) {
+    hover = id;
+    if (mode === "focus") {
+      trace = !id || selSet.has(id) ? null : down.has(id) ? new Set([id, ...selSet, ...[...closure(id, parents)].filter(k => down.has(k))])
+            : up.has(id) ? new Set([id, ...selSet, ...[...closure(id, children)].filter(k => up.has(k))]) : null;
+    }
+    refreshEdges();
+  }
+  if (id) {
+    tipCurrentEdge = null;
+    clearTimeout(tipShowTimer);
+    if (!tip.classList.contains("show") || tip.__nodeId !== id) {
+      tipShowTimer = setTimeout(() => { setTip(id, e); tip.__nodeId = id; }, 300);
+    }
+  } else {
+    tip.__nodeId = null;
+    if (!tipCurrentEdge) { clearTimeout(tipShowTimer); scheduleTipClose(); }
+  }
+}
+function setTip(id, e) {
+  if (!id) { scheduleTipClose(); return; }
+  if (GROUPS[id]) return setGroupTip(id, e);
+  clearTimeout(tipCloseTimer);
+  // 悬停直接显示完整推导内容（和点击固定时一样）
+  const n = byId[id];
+  const deps = n.deps.filter((d, i, a) => a.findIndex(x => x.id === d.id) === i);
+  let h = `<b>${stars(n) ? stars(n) + " " : ""}${esc(n.full)}</b>`;
+  if (n.one) h += `<div class="hero-formula">${formulaHtml(n.one)}</div>`;
+  if (conds(id).length) h += `<span class="rel">条件：${formulaHtml(conds(id).join("；"))}</span>`;
+  if (n.what) h += `<p>${linkParen(n.what)}</p>`;
+  if ((n.points || []).length) h += n.points.map(t => `<span class="rel">${linkParen(t)}</span>`).join("");
+  if (n.from) h += `<h3>从哪来</h3><p>${linkParen(n.from)}</p>`;
+  if (deps.some(d => d.how)) {
+    h += `<h3>推导过程</h3>`;
+    deps.filter(d => d.how).forEach((d, i) => {
+      const srcName = nameOf(d.id);
+      h += `<div class="dep-block"><div class="dep-flow"><span class="lk" data-id="${d.id}">${esc(srcName)}</span><span class="arrow">──→</span><span style="color:#fff;font-weight:600">${esc(n.name)}</span></div>${relLine(d)}</div>`;
+    });
+  }
+  if (n.next) h += `<h3>后来发展到</h3><p>${linkParen(n.next)}</p>`;
+  if (n.upto) h += `<h3>再往上</h3><p>${linkParen(n.upto)}</p>`;
+  if (n.use) h += `<h3>用在哪</h3><p>${linkParen(n.use)}</p>`;
+  if (n.eg) h += `<h3>例子</h3><p>${linkParen(n.eg)}</p>`;
+  if ((n.counterexamples || []).length) h += `<h3>易错</h3>${n.counterexamples.map(t => `<span class="rel" style="color:#FF8A8A">✗ ${linkParen(t)}</span>`).join("")}`;
+  // 方法和工具的详细描述已移至连线 hover 显示，节点 tooltip 不再重复
+  if (entriesOf(id).length) h += `<h3>题型</h3>${entriesOf(id).map(e => `<span class="rel"><b>${formulaHtml(e.pattern)}</b></span>${e.targets.map(t => `<span class="rel" style="margin-left:8px">${formulaHtml(t.case)}${t.nodes.length ? "：" + t.nodes.filter(k => byId[k]).map(k => `<span class="lk" data-id="${k}">${esc(byId[k].name)}</span>`).join(" ") : ""}${t.hint ? "<br><small>" + formulaHtml(t.hint) + "</small>" : ""}</span>`).join("")}`).join("")}`;
+  if ((n.notes || []).length) h += n.notes.map(t => `<small>${linkParen(t)}</small>`).join("");
+  setHTML(tip, "<div class=\"tip-inner\">" + h + "</div>");
+  tip.classList.add("show");
+  positionTip(e, id);
+  tip.querySelectorAll("[data-id]").forEach(a => {
+    a.onclick = () => navTo(a.dataset.id);
+    a.onkeydown = ev => { if (ev.key === "Enter") navTo(a.dataset.id); };
+  });
+}
+function positionTip(e, id) {
+  tip.classList.remove("arrow-left", "arrow-right", "arrow-top");
+  // 基于节点边缘定位，不用鼠标位置（避免和节点重叠）
+  const o = id && N[id] ? N[id] : null;
+  let anchorX, anchorY;
+  if (o && o.ta > 0.5) {
+    const s = scaleOf(id);
+    anchorX = o.x * cam.k + cam.x;
+    anchorY = o.y * cam.k + cam.y + 56;
+    const nodeHalfW = o.w * s / 2 * cam.k;
+    const nodeHalfH = 27 * s * cam.k;
+    const gap = 14;
+
+    // 测量 tip 实际尺寸
+    tip.style.left = "0"; tip.style.top = "0";
+    const tipW = Math.min(560, tip.scrollWidth + 8);
+    const tipH = Math.min(innerHeight - 80, tip.scrollHeight + 8);
+
+    // 优先放右边
+    let left = anchorX + nodeHalfW + gap;
+    if (left + tipW > innerWidth - 12) {
+      // 放左边
+      left = anchorX - nodeHalfW - gap - tipW;
+      tip.classList.add("arrow-right");
+    } else {
+      tip.classList.add("arrow-left");
+    }
+    let top = anchorY - 30;
+    if (top + tipH > innerHeight - 12) top = innerHeight - tipH - 12;
+    if (top < 60) top = 60;
+
+    // 箭头对齐节点中心
+    const arrowY = Math.max(16, Math.min(tipH - 20, anchorY - top));
+    tip.style.setProperty("--arrow-y", arrowY + "px");
+
+    tip.style.left = Math.max(12, left) + "px";
+    tip.style.top = top + "px";
+  } else if (e) {
+    tip.style.left = Math.min(innerWidth - 400, e.clientX + 16) + "px";
+    tip.style.top = Math.max(60, Math.min(innerHeight - 200, e.clientY + 18)) + "px";
+  }
+}
+function buildTipContent(id) {
+  const n = byId[id], rc = RC[n.region];
+  const deps = n.deps.filter((d, i, a) => a.findIndex(x => x.id === d.id) === i);
+  const meta = [n.region, n.type, ...(n.tags || [])].filter(Boolean).join(" · ");
+  let h = `<small>${esc(meta)}</small>`;
+  h += `<b>${stars(n) ? stars(n) + " " : ""}${esc(n.full)}</b>`;
+  if (n.one) h += `<div class="hero-formula">${formulaHtml(n.one)}</div>`;
+  if (conds(id).length) h += `<span class="rel">条件：${formulaHtml(conds(id).join("；"))}</span>`;
+  h += `<p>${linkParen(n.what)}</p>`;
+  if (deps.length) {
+    h += `<h3>从哪来</h3>`;
+    deps.forEach(d => { h += `<div style="margin:4px 0"><span class="lk" data-id="${d.id}">${esc(nameOf(d.id))}</span> ${relLine(d)}</div>`; });
+  }
+  if (children[id].length) {
+    h += `<h3>后来发展到</h3>`;
+    children[id].slice(0, 5).forEach(k => { h += `<div style="margin:3px 0"><span class="lk" data-id="${k}">${esc(nameOf(k))}</span></div>`; });
+    if (children[id].length > 5) h += `<small>…共 ${children[id].length} 个</small>`;
+  }
+  const fromList = parents[id].slice(0, 4).map(k => esc(byId[k].name)).join("、");
+  if (fromList) h += `<small>来自：${fromList}${parents[id].length > 4 ? "…" : ""}</small>`;
+  setHTML(tip, "<div class=\"tip-inner\">" + h + "</div>");
+}
+// tip 的显示/隐藏：延迟关闭让鼠标能移入；pinned 状态完全保护
+let tipCloseTimer = 0;
+function scheduleTipClose() {
+  clearTimeout(tipCloseTimer);
+  tipCloseTimer = setTimeout(() => {
+    if (!tip.matches(":hover")) {
+      tip.classList.remove("show"); hover = null;
+    }
+  }, 100);
+}
+tip.addEventListener("mouseenter", () => { clearTimeout(tipCloseTimer); });
+tip.addEventListener("mouseleave", () => { scheduleTipClose(); });
+
+// ── 选中：只留下它的”家谱”，仍按楼层摆好 ──
+function select(id, keepTrail) {
+  stopTour();
+  methodHi = null; methodPin = null;
+  const isG = !!GROUPS[id], mem = isG ? GROUPS[id].members : [id];
+  mode = "focus"; sel = id; selSet = new Set(mem); hover = null; hoverGroup = null; trace = null; chainHi = null;
+  up = new Set(); down = new Set();
+  mem.forEach(m => { closure(m, parents).forEach(x => up.add(x)); closure(m, children).forEach(x => down.add(x)); });
+  mem.forEach(m => { up.delete(m); down.delete(m); }); up.forEach(x => down.delete(x));
+  if (!keepTrail) { const i = trail.indexOf(id); if (i >= 0) trail = trail.slice(0, i); trail.push(id); trail = trail.slice(-7); }
+  const fam = [...mem, ...up, ...down];
+  ctxSet = new Set();
+  fam.forEach(k => { const g = byId[k].group; if (g && GROUPS[g]) GROUPS[g].members.forEach(m => { if (!fam.includes(m)) ctxSet.add(m); }); });
+  const S = [...fam, ...ctxSet], selfId = isG ? null : id;
+  const WW = Math.max(560, Math.min(1300, VW - (wide() ? 220 : 24)));
+  const {B} = makeBands(S, WW, selfId);
+  const P = simulate(S, B, WW, k => N[k].hx / home.W * WW, selfId);
+  setTargets(P, S); setBands(B);
+  LE = lineageEdges(); refreshEdges();
+  drawBar(); setTip(null);
+  fitIds(S, 1.3, .45);
+}
+function goHome() {
+  stopTour(); mode = "home"; sel = null; selSet = new Set(); ctxSet = new Set(); up = new Set(); down = new Set(); trace = null; trail = []; chainHi = null;
+  showHome(); drawBar(); fitHome(); tip.classList.remove("show");
+}
+// 历史管理：只有用户主动操作才写入历史；初始化和 popstate 恢复只改视图
+let _initTimer = 0;
+function navTo(id) { clearTimeout(_initTimer); select(id); history.pushState({id}, "", "#" + encodeURIComponent(id)); }
+function navHome() { clearTimeout(_initTimer); goHome(); if (location.hash) history.pushState(null, "", location.pathname + location.search); }
+
+// ── 主干：从地基一步步走上去 ──
+const caption = $("#caption");
+function startTour(ci) {
+  const ch = DATA.chains[ci];
+  showHome(); tip.classList.remove("show");
+  mode = "tour"; sel = null; trace = null; hover = null; chainHi = null; tourPath = ch.paths[0]; tourI = 0; tourPlay = true; tourName = ch.name;
+  drawBar(); tourStep();
+}
+function tourStep() {
+  clearTimeout(tourTimer); refreshEdges();
+  const cur = tourPath[tourI], prev = tourPath[tourI - 1];
+  const head = prev ? `<b>${esc(byId[prev].name)}</b><span class="ar">→</span><b>${esc(byId[cur].name)}</b><br>${formulaHtml(howOf[prev + ">" + cur] || byId[cur].one)}`
+    : `从 <b>${esc(byId[cur].name)}</b> 出发<br>${formulaHtml(byId[cur].one)}`;
+  setHTML(caption, `<div class="top"><span>${esc(tourName)}</span><span class="dots">${tourPath.map((_, i) => `<i class="${i <= tourI ? "on" : ""}"></i>`).join("")}</span><span>${tourI + 1} / ${tourPath.length}　${esc(byId[cur].stage)}</span></div>
+    <div class="txt">${head}</div>
+    <div class="ctrl"><button id="tPrev" ${tourI ? "" : "disabled"}>◀ 上一步</button><button id="tPlay">${tourPlay ? "❚❚ 暂停" : "▶ 播放"}</button><button id="tNext" ${tourI < tourPath.length - 1 ? "" : "disabled"}>下一步 ▶</button><button class="main" id="tOpen">看「${esc(byId[cur].name)}」的家谱</button></div>`);
+  caption.classList.add("show");
+  $("#tPrev").onclick = () => { tourPlay = false; tourI--; tourStep(); };
+  $("#tNext").onclick = () => { tourPlay = false; tourI++; tourStep(); };
+  $("#tPlay").onclick = () => { tourPlay = !tourPlay; if (tourPlay && tourI === tourPath.length - 1) tourI = 0; tourStep(); };
+  $("#tOpen").onclick = () => navTo(cur);
+  fitIds(prev ? [prev, cur] : [cur], 1.25, .7);
+  if (tourPlay && tourI < tourPath.length - 1) tourTimer = setTimeout(() => { tourI++; tourStep(); }, 3200);
+  else if (tourPlay) tourPlay = false;
+}
+function stopTour() { clearTimeout(tourTimer); clearTimeout(deriveTimer); deriveTimer = 0; caption.classList.remove("show"); tip.classList.remove("show"); if (mode === "tour" || mode === "derive") mode = "home"; }
+
+// ── 演绎模式：从公理到结论（或反向），分阶段动画播放 ──
+let deriveSteps = [], deriveI = 0, derivePhase = 0, derivePlay = true, deriveTimer = 0;
+let deriveTarget = "", deriveReverse = false, deriveSession = 0, derivePos = null, deriveAllIds = [];
+
+function buildDeriveSteps(targetId, reverse) {
+  const ancestors = new Set([targetId]);
+  const q = [targetId];
+  for (let i = 0; i < q.length; i++) {
+    for (const p of parents[q[i]]) {
+      if (!ancestors.has(p)) { ancestors.add(p); q.push(p); }
+    }
+  }
+  const waves = {};
+  for (const id of ancestors) { const L = byId[id].layer; (waves[L] = waves[L] || []).push(id); }
+  const layerNums = Object.keys(waves).map(Number).sort((a, b) => a - b);
+  const steps = [];
+  const shown = new Set();
+  for (const L of layerNums) {
+    const waveNodes = waves[L];
+    const edges = [];
+    for (const id of waveNodes) {
+      for (const d of byId[id].deps) {
+        if (shown.has(d.id) && ancestors.has(d.id)) {
+          edges.push({ from: d.id, to: id, how: d.how || "", method: d.method || "" });
+        }
+      }
+    }
+    if (!edges.length) {
+      steps.push({ type: "appear", nodes: waveNodes, edge: null });
+    } else {
+      for (const e of edges) {
+        steps.push({ type: "derive", nodes: [e.to], edge: e });
+      }
+    }
+    waveNodes.forEach(id => shown.add(id));
+  }
+  return reverse ? steps.slice().reverse().map(s => {
+    if (!s.edge) return s;
+    return { ...s, edge: { ...s.edge, from: s.edge.to, to: s.edge.from } };
+  }) : steps;
+}
+
+function startDerive(targetId, reverse) {
+  stopTour();
+  deriveSession++;
+  deriveTarget = targetId;
+  deriveReverse = reverse;
+  deriveSteps = buildDeriveSteps(targetId, reverse);
+  if (!deriveSteps.length) return;
+  const allIds = [...new Set(deriveSteps.flatMap(s => s.nodes))];
+  deriveAllIds = allIds;
+  const WW = Math.max(560, Math.min(1300, VW - (wide() ? 220 : 24)));
+  const {B} = makeBands(allIds, WW, null);
+  derivePos = simulate(allIds, B, WW, k => N[k].hx / home.W * WW, null);
+  setBands(B);
+  ALLV.forEach(id => { N[id].ta = 0; });
+  mode = "derive"; deriveI = 0; derivePhase = 0; derivePlay = true;
+  tip.classList.remove("show");
+  deriveAnimate();
+}
+
+function deriveAnimate() {
+  clearTimeout(deriveTimer);
+  const session = deriveSession;
+  const step = deriveSteps[deriveI];
+  if (!step || mode !== "derive") return;
+  const shown = new Set();
+  for (let i = 0; i < deriveI; i++) deriveSteps[i].nodes.forEach(id => shown.add(id));
+
+  if (step.type === "appear") {
+    step.nodes.forEach(id => shown.add(id));
+    ALLV.forEach(id => {
+      if (shown.has(id)) { N[id].tx = derivePos[id]?.x || N[id].hx; N[id].ty = derivePos[id]?.y || N[id].hy; N[id].ta = 1; }
+      else { N[id].ta = 0; }
+    });
+    rebuildDeriveEdges(deriveI);
+    const names = step.nodes.map(id => byId[id].name).join(", ");
+    let head = "<b>" + esc(names) + "</b>";
+    if (step.nodes.length === 1) head += "<br>" + formulaHtml(byId[step.nodes[0]].one);
+    showDeriveCaption(head);
+    if ([...shown].length) fitIds([...shown], 1.2, .4);
+    scheduleNext(session, 2500);
+    return;
+  }
+
+  const e = step.edge;
+  if (derivePhase === 0) {
+    shown.add(e.from);
+    ALLV.forEach(id => {
+      if (shown.has(id)) { N[id].tx = derivePos[id]?.x || N[id].hx; N[id].ty = derivePos[id]?.y || N[id].hy; N[id].ta = 1; }
+      else { N[id].ta = 0; }
+    });
+    rebuildDeriveEdges(deriveI);
+    const fromName = byId[e.from]?.name || e.from;
+    showDeriveCaption("<b>" + esc(fromName) + "</b>" + (e.method ? " 【" + esc(e.method) + "】" : ""));
+    fitIds([e.from], 1.1, .5);
+    derivePhase = 1;
+    scheduleNext(session, 1200);
+    return;
+  }
+
+  if (derivePhase === 1) {
+    shown.add(e.from);
+    step.nodes.forEach(id => shown.add(id));
+    ALLV.forEach(id => {
+      if (shown.has(id)) { N[id].tx = derivePos[id]?.x || N[id].hx; N[id].ty = derivePos[id]?.y || N[id].hy; N[id].ta = 1; }
+      else { N[id].ta = 0; }
+    });
+    ED = [];
+    const add = (a, b, color, al, w, flow, arrow) => ED.push({a, b, color, al, w, flow, arrow, ph: hash(a + b)});
+    for (let i = 0; i < deriveI; i++) { const s = deriveSteps[i]; if (s.edge) add(s.edge.from, s.edge.to, C.srcBd, 0.4, 1.5, false, true); }
+    add(e.from, e.to, C.dstBd, 1, 2.8, true, true);
+    fitIds([e.from, e.to], 1.1, .5);
+
+    const fromName = byId[e.from]?.name || e.from;
+    const toName = byId[e.to]?.name || e.to;
+    let head = "<b>" + esc(fromName) + '</b><span class="ar">→</span><b>' + esc(toName) + "</b>";
+    if (e.how) head += "<br>" + formulaHtml(e.how);
+    else if (e.method) head += "<br>【" + esc(e.method) + "】";
+    showDeriveCaption(head);
+
+    derivePhase = 0;
+    const delay = e.how ? Math.min(5000, 2000 + e.how.length * 12) : 2500;
+    scheduleNext(session, delay);
+    return;
+  }
+}
+
+function rebuildDeriveEdges(upTo) {
+  ED = [];
+  const add = (a, b, color, al, w, flow, arrow) => ED.push({a, b, color, al, w, flow, arrow, ph: hash(a + b)});
+  for (let i = 0; i < upTo; i++) { const s = deriveSteps[i]; if (s.edge) add(s.edge.from, s.edge.to, C.srcBd, 0.4, 1.5, false, true); }
+}
+
+function showDeriveCaption(head) {
+  const total = deriveSteps.length;
+  const dirLabel = deriveReverse ? "反向溯源" : "正向演绎";
+  setHTML(caption, '<div class="top"><span>' + dirLabel + "：" + esc(byId[deriveTarget]?.name || deriveTarget) + '</span><span class="dots">' + deriveSteps.map((_, i) => '<i class="' + (i <= deriveI ? "on" : "") + '"></i>').join("") + "</span><span>" + (deriveI + 1) + " / " + total + "</span></div>" +
+    '<div class="txt">' + head + "</div>" +
+    '<div class="ctrl"><button id="dPrev" ' + (deriveI ? "" : "disabled") + '>◀ 上一步</button><button id="dPlay">' + (derivePlay ? "❚❚ 暂停" : "▶ 播放") + '</button><button id="dNext" ' + (deriveI < total - 1 ? "" : "disabled") + '>下一步 ▶</button><button class="main" id="dClose">结束</button></div>');
+  caption.classList.add("show");
+  $("#dPrev").onclick = () => { derivePlay = false; if (derivePhase > 0) { derivePhase = 0; } else { deriveI = Math.max(0, deriveI - 1); derivePhase = 0; } deriveAnimate(); };
+  $("#dNext").onclick = () => { derivePlay = false; derivePhase = 0; deriveI = Math.min(deriveSteps.length - 1, deriveI + 1); deriveAnimate(); };
+  $("#dPlay").onclick = () => { derivePlay = !derivePlay; if (derivePlay && deriveI === deriveSteps.length - 1) { deriveI = 0; derivePhase = 0; } deriveAnimate(); };
+  $("#dClose").onclick = () => { stopTour(); goHome(); showHome(); fitHome(); };
+}
+
+function scheduleNext(session, ms) {
+  if (!derivePlay) return;
+  deriveTimer = setTimeout(() => {
+    if (deriveSession !== session || mode !== "derive") return;
+    if (derivePhase === 0 && deriveI < deriveSteps.length - 1) { deriveI++; }
+    else if (derivePhase === 0) { derivePlay = false; deriveAnimate(); return; }
+    deriveAnimate();
+  }, ms);
+}
+
+// ── 第二行：全景时是主干，选中时是足迹 ──
+function drawBar() {
+  const bar = $("#bar");
+  if (mode === "focus") {
+    setHTML(bar, `<button class="chip back" id="bBack">← 全景</button>` +
+      trail.map((k, i) => `${i ? '<span class="sep">›</span>' : ""}<button class="chip ${k === sel ? "now" : ""}" data-id="${k}">${esc(nameOf(k))}</button>`).join(""));
+    bar.querySelectorAll("[data-id]").forEach(b => b.onclick = () => navTo(b.dataset.id));
+  } else if (mode === "tour") {
+    setHTML(bar, `<button class="chip back" id="bBack">← 全景</button><span class="lead">正在走主干：${esc(tourName)}</span>`);
+  } else {
+    const anyType = DATA.nodes.some(n => n.type || (n.conditions || []).length);
+    // 主干播放
+    setHTML(bar, (DATA.chains.length ? `<span class="lead" title="点一条，从地基一步步播放上去">主干：</span>` + DATA.chains.map((c, i) => `<button class="chip" data-i="${i}" title="点了从地基一步步播放"><span class="play">▶</span>${esc(c.name)}</button>`).join("") : ""));
+    setHTML($("#legend"), `${REG.map(r => `<span><i style="background:${RC[r]}"></i>${r}</span>`).join("")}${anyType ? `<span>■ 起点</span><span>● 结论</span><span>○ 中间一步</span><span style="color:var(--src)">◆ 有条件</span>` : ""}`);
+    bar.querySelectorAll("[data-m]").forEach(b => {
+      const m = METHODS[b.dataset.m];
+      b.onmouseenter = () => { methodHi = m; refreshEdges(); };
+      b.onmouseleave = () => { methodHi = methodPin === null ? null : METHODS[methodPin]; refreshEdges(); };
+      b.onclick = () => showMethod(+b.dataset.m);
+    });
+    bar.querySelectorAll("[data-i]").forEach(b => {
+      b.onmouseenter = () => { chainHi = DATA.chains[b.dataset.i].paths[0]; refreshEdges(); };
+      b.onmouseleave = () => { chainHi = null; refreshEdges(); };
+      b.onclick = () => { chainHi = null; startTour(+b.dataset.i); };
+    });
+    const bTool = $("#bToolbox"); if (bTool) bTool.onclick = openToolbox;
+    const bEntry = $("#bEntries"); if (bEntry) bEntry.onclick = openEntries;
+  }
+  const back = $("#bBack"); if (back) back.onclick = navHome;
+}
+
+// 工具箱面板：复用 palette 的样式
+function renderToolbox() {
+  const v = pq.value.trim().toLowerCase(); act = 0;
+  const items = v ? TOOLBOX.filter(t => (t.name + (t.formula || "") + (t.source || "") + (t.notes || "")).toLowerCase().includes(v)) : TOOLBOX;
+  setHTML(pres, (items.length ? `<div class="head">工具箱 · ${items.length} 个外部工具</div>` : `<div class="head">没有找到</div>`) +
+    items.map((t, i) => `<div class="it ${i ? "" : "act"}"><span class="id" style="font-size:10px">${t.source ? esc(t.source) : ""}</span><b>${esc(t.name)}</b><i></i><small>${formulaHtml(t.formula || "")}${t.notes ? "<br><span style='color:var(--muted);font-size:11px'>" + linkParen(t.notes) + "</span>" : ""}${(t.usedBy || []).length ? "<br>用在：" + t.usedBy.filter(k => byId[k]).map(k => `<span class="ref" data-id="${k}" tabindex="0" role="button">${esc(byId[k].name)}</span>`).join(" ") : ""}</small></div>`).join(""));
+  pres.querySelectorAll("[data-id]").forEach(a => a.onclick = () => { closePalette(); navTo(a.dataset.id); });
+}
+function openToolbox() {
+  palMode = "toolbox"; pal.classList.add("show"); pq.value = ""; pq.placeholder = "搜索工具箱…";
+  renderToolbox(); pq.focus();
+}
+
+function renderEntries() {
+  const v = pq.value.trim().toLowerCase(); act = 0;
+  const items = v ? ENTRIES.filter(e => (e.pattern + e.targets.map(t => t.case + (t.hint || "")).join("")).toLowerCase().includes(v)) : ENTRIES;
+  setHTML(pres, (items.length ? `<div class="head">题型入口 · ${items.length} 个</div>` : `<div class="head">没有找到</div>`) +
+    items.map((e, i) => `<div class="it ${i ? "" : "act"}" style="cursor:default"><span class="id"></span><b>看到 ${formulaHtml(e.pattern)}</b><i></i><small>${e.targets.map(t => `${formulaHtml(t.case)}：${t.nodes.filter(k => byId[k]).map(k => `<span class="ref" data-id="${k}" tabindex="0" role="button">${esc(byId[k].name)}</span>`).join(" ")}${t.hint ? "<br><span style='color:var(--muted);font-size:11px'>" + formulaHtml(t.hint) + "</span>" : ""}`).join("<br>")}</small></div>`).join(""));
+  pres.querySelectorAll("[data-id]").forEach(a => a.onclick = () => { closePalette(); navTo(a.dataset.id); });
+}
+function openEntries() {
+  palMode = "entries"; pal.classList.add("show"); pq.value = ""; pq.placeholder = "搜索题型…";
+  renderEntries(); pq.focus();
+}
+
+// 方法：点了固定高亮，底部卡片列出说明和用到它的知识
+function showMethod(i) {
+  if (methodPin === i) { methodPin = null; methodHi = null; caption.classList.remove("show"); drawBar(); refreshEdges(); return; }
+  stopTour(); methodPin = i; methodHi = METHODS[i]; const m = methodHi;
+  let mBody = `<b>${esc(m.name)}</b>`;
+  if (m.direction) mBody += `<br><span style="color:var(--dst)">方向：</span>${linkParen(m.direction)}`;
+  if (m.signal) mBody += `<br><span style="color:var(--src)">信号：</span>${linkParen(m.signal)}`;
+  if (m.desc) mBody += `<br>${linkParen(m.desc)}`;
+  if (m.basis) mBody += `<br><span style="color:var(--muted)">依据：</span>${linkParen(m.basis)}`;
+  let mExtra = "";
+  if ((m.examples || []).length) mExtra += m.examples.map(e => `<div style="font-size:12.5px;color:var(--dst);margin-top:3px">▸ ${linkParen(e)}</div>`).join("");
+  if ((m.pitfalls || []).length) mExtra += m.pitfalls.map(p => `<div style="font-size:12.5px;color:#D64545;margin-top:3px">⚠ ${linkParen(p)}</div>`).join("");
+  if ((m.labels || []).length) mExtra += `<div style="font-size:11px;color:var(--muted);margin-top:4px">线上标签：${m.labels.map(l => "【" + esc(l) + "】").join(" ")}</div>`;
+  let mNodes = m.nodes.filter(k => byId[k]);
+  if (mNodes.length) mExtra += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${mNodes.map(k => `<button data-id="${k}" style="height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:12.5px">${esc(byId[k].name)}</button>`).join("")}</div>`;
+  setHTML(caption, `<div class="top"><span>方法</span><span>${mNodes.length} 个知识用到</span></div><div class="txt">${mBody}${mExtra}</div>
+    <div class="ctrl"><button class="main" id="mClose">收起</button></div>`);
+  caption.classList.add("show");
+  caption.querySelectorAll("[data-id]").forEach(b => b.onclick = () => { methodPin = null; methodHi = null; navTo(b.dataset.id); });
+  $("#mClose").onclick = () => showMethod(i);
+  drawBar(); refreshEdges(); fitIds(m.nodes.filter(k => byId[k]), 1.2, .45);
+}
+
+// ── 详情卡片（替代右侧面板）──
+const lk = id => `<span class="lk" data-id="${id}" tabindex="0" role="button">${GROUPS[id] ? "分组 · " : gname(id) ? `<span style="color:var(--muted)">${esc(gname(id))} > </span>` : ""}${esc(nameOf(id))}</span>`;
+const ref = id => `<span class="ref" data-id="${id}" tabindex="0" role="button">${esc(nameOf(id))}</span>`;
+const linkParen = s => {
+  let t = String(s);
+  t = t.replace(/〔[^〕]+〕/g, "");
+  t = t.replace(new RegExp("（((?:" + IDP + ")(?:[、，,]\\s*" + IDP + ")*)）", "g"), (m, ids) => {
+    const l = ids.split(/[、，,]\s*/).filter(isRef);
+    return l.length ? l.map(id => "{{REF:" + id + "}}").join("") : m;
+  });
+  t = t.replace(/(?<![\\w{:])([A-Za-z]\w*\d+)(?![\\w}])/g, (m, id) => isRef(id) ? "{{REF:" + id + "}}" : m);
+  let h = formulaHtml(t);
+  h = h.replace(/\{\{REF:([^}]+)\}\}/g, (m, id) => isRef(id) ? ref(id) : id);
+  return h;
+};
+const PLAIN = {"⇐推出": "由", "⇐用到": "用到", "⇐推广": "推广自", "⇐特例": "是这个的特例："};
+const linkIds = s => formulaHtml(s).replace(/⇐(推出|用到|推广|特例)\s*/g, m => PLAIN[m.trim()] || "")
+  .replace(new RegExp("(?<![\\w.])("+IDP+")(?![\\w])\\s*([^\\s、，；：（）。]*)", "g"), (m, id, w) => {
+    if (!isRef(id)) return m; const n = byId[id] || GROUPS[id], dup = w && (n.full.includes(w) || n.name.includes(w) || w.length <= 1);
+    return lk(id) + (dup ? "" : " " + w); });
+const KIND = {"前提": "以它为前提", "推出": "由它推出", "用到": "用到它", "推广": "由它推广而来", "特例": "是它的特例", "对照": "和它对照着看"};
+function routeToBase(id) {
+  const prev = {}, q = [id], seen = new Set([id]);
+  for (let i = 0; i < q.length; i++) { const x = q[i];
+    if (byId[x].layer === 0 && x !== id) { const p = [x]; let y = x; while (prev[y]) { y = prev[y]; p.push(y); } return p; }
+    for (const p of parents[x]) if (!seen.has(p)) { seen.add(p); prev[p] = x; q.push(p); } }
+  return [id];
+}
+const relLine = d => {
+  const markStep = s => linkParen(s).replace(/【([^】]+)】/g, (m, t) => RELATION_TAGS.has(t) ? `<span style="color:#8D9BAD">【${t}】</span>` : `<span style="color:#5DBBBE;font-weight:600">【${t}】</span>`).replace(/「([^」]+)」/g, '<span style="color:#FFD08A;font-weight:600">「$1」</span>');
+  let h = "";
+  if (d.condition) h += `<div class="tip-cond">◆ 条件：${formulaHtml(d.condition)}</div>`;
+  if (d.how) {
+    const steps = d.how.split(/[；;]/).map(s => s.trim()).filter(Boolean);
+    if (steps.length > 1) {
+      h += `<div class="proof">${steps.map((s, i) => `<div class="proof-step"><span class="sn">${i + 1}</span><span>${markStep(s)}</span></div>`).join("")}</div>`;
+    } else {
+      h += `<div style="margin:4px 0">${markStep(d.how)}</div>`;
+    }
+  }
+  if (d.detail) h += `<div class="dt">${linkParen(d.detail)}</div>`;
+  return h;
+};
+
+// ── 搜索面板（三种模式共用同一个弹窗：search 知识搜索、toolbox 工具箱、entries 题型入口）──
+const pal = $("#palette"), pq = $("#pq"), pres = $("#pres"); let hits = [], act = 0, palMode = "search";
+function openPalette() { palMode = "search"; pal.classList.add("show"); pq.value = ""; pq.placeholder = "输入知识名称，如 导数、概率、向量"; renderHits(); pq.focus(); }
+function closePalette() { pal.classList.remove("show"); palMode = "search"; }
+function subseqMatch(text, query) {
+  let qi = 0;
+  for (let ti = 0; ti < text.length && qi < query.length; ti++) if (text[ti] === query[qi]) qi++;
+  return qi === query.length;
+}
+function pyMatch(py, q) {
+  if (!py) return 0;
+  if (py.includes(q)) return 2;
+  let qi = 0;
+  for (let ti = 0; ti < py.length && qi < q.length; ti++) if (py[ti] === q[qi]) qi++;
+  return qi === q.length ? 1 : 0;
+}
+function scoreNode(n, v) {
+  const q = v.toLowerCase();
+  const nameText = (n.id + n.name + (n.full || '') + gname(n.id)).toLowerCase();
+  if (nameText.includes(q)) return 10;
+  if (subseqMatch(nameText, q)) return 8;
+  const pyN = n._pyN || '';
+  if (pyN && pyN.startsWith(q)) return 7.5;
+  if (pyN && pyN.includes(q)) return 7;
+  const namePySeq = pyMatch(pyN, q);
+  if (namePySeq) return 5 + namePySeq;
+  const oneText = (n.one || '').toLowerCase() + ((n.tags || []).join('')).toLowerCase();
+  if (oneText.includes(q)) return 4;
+  const extraPy = pyMatch(n._pyX || '', q);
+  if (extraPy) return 2 + extraPy;
+  const bodyText = ((n.what || '') + (n.points || []).join('') + (n.conditions || []).join('')).toLowerCase();
+  if (bodyText.includes(q) || subseqMatch(bodyText, q)) return 1;
+  return 0;
+}
+const GROUP_ITEMS = Object.values(GROUPS).filter(g => g.members.length).map(g => {
+  const gd = DATA.groups.find(g2 => g2.id === g.id) || {};
+  return {id: g.id, name: g.name, full: g.full, one: g.one, what: g.what, region: byId[g.members[0]].region, isGroup: true, _pyN: gd._pyN || '', _pyX: gd._pyX || ''};
+});
+function renderHits() {
+  const v = pq.value.trim();
+  if (!v) hits = (DATA.featured && DATA.featured.length ? DATA.featured : ALL.slice().sort((a, b) => closure(b, children).size - closure(a, children).size).slice(0, 8)).filter(k => byId[k]).map(k => byId[k]);
+  else {
+    const scored = DATA.nodes.concat(GROUP_ITEMS).map(n => ({n, s: scoreNode(n, v)}))
+      .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+    hits = scored.map(x => x.n);
+  }
+  hits = hits.slice(0, 9); act = 0;
+  setHTML(pres, (v ? "" : `<div class="head">常看的知识</div>`) + (hits.length ? hits.map((n, i) => `<div class="it ${i ? "" : "act"}" data-id="${n.id}"><span class="id" style="font-size:10px"></span><b>${n.isGroup ? "分组 · " : gname(n.id) ? `<span style="color:var(--muted);font-weight:400">${esc(gname(n.id))} › </span>` : ""}${esc(n.name)}</b><i style="color:${RC[n.region]}">${n.region}</i><small>${formulaHtml(n.one || "")}</small></div>`).join("")
+    : `<div class="head" style="letter-spacing:0">没有找到“${esc(v)}”。换个说法试试，如“导数”“概率”“三角形”</div>`));
+  pres.querySelectorAll(".it").forEach((d, i) => { d.onclick = () => { closePalette(); navTo(d.dataset.id); }; d.onmousemove = () => { if (act !== i) { act = i; mark(); } }; });
+}
+const mark = () => pres.querySelectorAll(".it").forEach((d, i) => { d.classList.toggle("act", i === act); if (i === act) d.scrollIntoView({block: "nearest"}); });
+function palInput() {
+  if (palMode === "toolbox") renderToolbox();
+  else if (palMode === "entries") renderEntries();
+  else renderHits();
+}
+pq.addEventListener("input", palInput);
+pq.addEventListener("keydown", e => {
+  const items = pres.querySelectorAll(".it");
+  if ((e.key === "ArrowDown" || e.key === "ArrowUp") && items.length) { e.preventDefault(); act = (act + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length; mark(); }
+  if (e.key === "Enter" && items[act]) { items[act].click(); }
+  if (e.key === "Escape") closePalette();
+});
+pal.addEventListener("mousedown", e => { if (e.target === pal) closePalette(); });
+$("#bSearch").onclick = openPalette;
+
+// ── 键盘：在家谱里走 ──
+addEventListener("keydown", e => {
+  if (pal.classList.contains("show")) return;
+  if (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) { e.preventDefault(); openPalette(); return; }
+  if (e.key === "Escape") { tip.classList.remove("show"); if (methodPin !== null) { showMethod(methodPin); return; } if (mode !== "home") navHome(); return; }
+  if (mode === "tour" && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); tourPlay = false;
+    tourI = Math.max(0, Math.min(tourPath.length - 1, tourI + (e.key === "ArrowRight" ? 1 : -1))); tourStep(); return; }
+  if (mode !== "focus" || !e.key.startsWith("Arrow") || (e.target.closest && e.target.closest("#detail"))) return;
+  e.preventDefault();
+  if (GROUPS[sel]) return;
+  const o = N[sel], near = list => list.sort((a, b) => Math.abs(N[a].tx - o.tx) - Math.abs(N[b].tx - o.tx))[0];
+  let to = null;
+  if (e.key === "ArrowDown") to = near([...parents[sel]]);
+  if (e.key === "ArrowUp") to = near([...children[sel]]);
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    const same = ALL.filter(k => N[k].ta > .5 && byId[k].layer === byId[sel].layer && k !== sel && (e.key === "ArrowLeft" ? N[k].tx < o.tx : N[k].tx > o.tx));
+    to = same.sort((a, b) => Math.abs(N[a].tx - o.tx) + Math.abs(N[a].ty - o.ty) - Math.abs(N[b].tx - o.tx) - Math.abs(N[b].ty - o.ty))[0];
+  }
+  if (to) navTo(to);
+});
+$("#home").onclick = navHome;
+
+// ── 尺寸 ──
+function resize() {
+  DPR = devicePixelRatio || 1; VW = innerWidth; VH = innerHeight - 56;
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  mini.width = 180 * DPR; mini.height = 120 * DPR;
+}
+let rz;
+addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { resize(); computeHome();
+  if (mode === "focus") select(sel, true); else if (mode === "tour") { showHome(); tourStep(); } else { showHome(); fitHome(); } }, 150); });
+
+// 操作提示：第一次动手后淡出
+const help = $("#help"), hideHelp = () => help.classList.add("gone");
+setTimeout(hideHelp, 12000); cv.addEventListener("pointerdown", hideHelp, {once: true});
+
+// ── 开场：一层层从地面升起，盖成大楼 ──
+resize(); computeHome(); showHome(); fitHome(); cam = {...camT};
+const t0 = performance.now();
+ALL.forEach(id => { const o = N[id]; o.x = o.tx; o.y = home.H + 220; o.a = 0; o.delay = reduce ? 0 : t0 + byId[id].layer * 85 + hash(id) * 120; });
+for (const L in bands) { bands[L].top = home.H; bands[L].bot = home.H; }
+refreshEdges(); drawBar();
+requestAnimationFrame(frame);
+// ── URL hash 直达：#编号 打开对应知识，浏览器前进后退也能用 ──
+const hashId = () => decodeURIComponent(location.hash.slice(1));
+const initId = hashId();
+if (initId && (byId[initId] || GROUPS[initId])) {
+  history.replaceState({id: initId}, "");
+  _initTimer = setTimeout(() => select(initId), reduce ? 0 : 800);
+}
+addEventListener("popstate", () => { clearTimeout(_initTimer); const id = hashId(); if (id && (byId[id] || GROUPS[id])) select(id, true); else if (mode !== "home") goHome(); });
+window.kmap = {select, goHome, startTour, formulaRuns, formulaHtml, formulaWidth, get mode() { return mode; }, get sel() { return sel; }, get up() { return up; }, get down() { return down; },
+  get ctxSet() { return ctxSet; }, get tourI() { return tourI; }, get cam() { return cam; }, get home() { return home; }, N, byId, GROUPS};
+</script>
+</body>
+</html>

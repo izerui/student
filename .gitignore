@@ -1,0 +1,19 @@
+.idea/
+*.iml
+.env
+.gateway.env
+tmp/
+.venv/
+*.iml
+# manim 视频项目：成片与渲染中间产物不入库
+videos/
+.claude/settings.local.json
+# 系统文件
+.DS_Store
+__pycache__/
+
+# 教材类原始资料体积大且不改动，不入库
+**/教材/
+**/老教材/
+**/课标/
+*.mp3

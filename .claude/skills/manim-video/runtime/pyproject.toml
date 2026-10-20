@@ -1,0 +1,26 @@
+[project]
+name = "question-solving-video-runtime"
+version = "0.3.0"
+description = "Pinned ManimCE runtime for single-question explanation videos"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "manim==0.21.0",
+  # 数学计算（函数曲线、积分、向量运算、插值）
+  "numpy==2.2.6",
+  "scipy>=1.14,<2",
+  "sympy>=1.13,<2",
+  # 图像处理（截图、水印、图片导入）
+  "pillow==11.3.0",
+  # SVG 导入（图标、自定义图形）
+  "svgelements>=1.9",
+  # 音频处理（wav 检查、时长探测）
+  "mutagen==1.47.0",
+  "pydub>=0.25",
+  # 字幕解析（备用）
+  "srt>=3.5",
+  # 日志格式化
+  "rich>=13",
+]
+
+[tool.uv]
+package = false
